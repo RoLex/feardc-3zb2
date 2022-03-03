@@ -1,6 +1,24 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "q_shared.h"
 
-#define DEG2RAD( a ) ( a * M_PI ) / 180.0F
+#define DEG2RAD( a ) ( a * M_PI ) / 180.0f
 
 vec3_t vec3_origin = {0,0,0};
 
@@ -49,7 +67,7 @@ void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, 
 	im[2][1] = m[1][2];
 
 	memset( zrot, 0, sizeof( zrot ) );
-	zrot[0][0] = zrot[1][1] = zrot[2][2] = 1.0F;
+	zrot[0][0] = zrot[1][1] = zrot[2][2] = 1.0f;
 
 	zrot[0][0] = cos( DEG2RAD( degrees ) );
 	zrot[0][1] = sin( DEG2RAD( degrees ) );
@@ -114,7 +132,7 @@ void ProjectPointOnPlane( vec3_t dst, const vec3_t p, const vec3_t normal )
 	vec3_t n;
 	float inv_denom;
 
-	inv_denom = 1.0F / DotProduct( normal, normal );
+	inv_denom = 1.0f / DotProduct( normal, normal );
 
 	d = DotProduct( normal, p ) * inv_denom;
 
@@ -134,7 +152,7 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 {
 	int	pos;
 	int i;
-	float minelem = 1.0F;
+	float minelem = 1.0f;
 	vec3_t tempvec;
 
 	/*
@@ -148,8 +166,8 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 			minelem = fabs( src[i] );
 		}
 	}
-	tempvec[0] = tempvec[1] = tempvec[2] = 0.0F;
-	tempvec[pos] = 1.0F;
+	tempvec[0] = tempvec[1] = tempvec[2] = 0.0f;
+	tempvec[pos] = 1.0f;
 
 	/*
 	** project the point onto the plane defined by src
@@ -279,7 +297,7 @@ float	anglemod(float a)
 	else
 		a += 360*( 1 + (int)(-a/360) );
 #endif
-	a = (360.0/65536) * ((int)(a*(65536/360.0)) & 65535);
+	a = (360.0f/65536) * ((int)(a*(65536/360.0f)) & 65535);
 	return a;
 }
 
@@ -1396,5 +1414,3 @@ void Info_SetValueForKey (char *s, char *key, char *value)
 }
 
 //====================================================================
-
-

@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 #include "m_player.h"
 #include "bot.h"
@@ -7,19 +25,19 @@ void droptofloor (edict_t *ent);
 edict_t *bot_team_flag1;
 edict_t *bot_team_flag2;
 
-void SetBotFlag1(edict_t *ent)	//チーム1の旗
+void SetBotFlag1(edict_t *ent) // team 1 flag
 {
 	bot_team_flag1 = ent;
 }
-void SetBotFlag2(edict_t *ent)  //チーム2の旗
+void SetBotFlag2(edict_t *ent) // team 2 flag
 {
 	bot_team_flag2 = ent;
 }
-edict_t *GetBotFlag1()	//チーム1の旗
+edict_t *GetBotFlag1() // team 1 flag
 {
 	return bot_team_flag1;
 }
-edict_t *GetBotFlag2()  //チーム2の旗
+edict_t *GetBotFlag2() // team 2 flag
 {
 	return bot_team_flag2;
 }
@@ -36,7 +54,7 @@ void SpawnItem2 (edict_t *ent, gitem_t *item)
 //	PrecacheItem (item);
 
 	ent->item = item;
-	ent->nextthink = level.time ;    // items start after other solids
+	ent->nextthink = level.framenum;    // items start after other solids
 	ent->think = droptofloor;
 	ent->s.effects = 0;
 	ent->s.renderfx = RF_GLOW;
@@ -44,14 +62,14 @@ void SpawnItem2 (edict_t *ent, gitem_t *item)
 //		gi.modelindex (ent->model);
 	droptofloor (ent);
 	ent->s.modelindex = 0;
-	ent->nextthink = level.time + 100 * FRAMETIME;    // items start after other solids
+	ent->nextthink = level.framenum + 100;    // items start after other solids
 	ent->think = G_FreeEdict;
 }
 
 //=====================================
 
 //
-// BOT用可視判定
+// visual judgment for bot
 //
 
 qboolean Bot_trace (edict_t *ent,edict_t *other)
@@ -74,7 +92,7 @@ qboolean Bot_trace (edict_t *ent,edict_t *other)
 		}
 
 		rs_trace = gi.trace (ttx, NULL, NULL, tty ,ent, CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME /*| CONTENTS_TRANSLUCENT*/);
-		if(rs_trace.fraction == 1.0 && !rs_trace.allsolid && !rs_trace.startsolid) return true;
+		if(rs_trace.fraction == 1.0f && !rs_trace.allsolid && !rs_trace.startsolid) return true;
 		if( ent->maxs[2] < 32 ) return false;
 
 		if(other->classname[6] == 'F'
@@ -104,7 +122,7 @@ qboolean Bot_trace (edict_t *ent,edict_t *other)
 		
 		ttx[2] -= 36;
 		rs_trace = gi.trace (ttx, NULL, NULL, other->s.origin ,ent, CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME /*|CONTENTS_TRANSLUCENT*/);
-		if(rs_trace.fraction == 1.0 && !rs_trace.allsolid && !rs_trace.startsolid) return true;
+		if(rs_trace.fraction == 1.0f && !rs_trace.allsolid && !rs_trace.startsolid) return true;
 		return false;
 }
 
@@ -119,7 +137,7 @@ qboolean Bot_traceX (edict_t *ent,edict_t *other)
 		tty[2] += 16;
 
 		rs_trace = gi.trace (ttx, NULL, NULL, tty ,ent, CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME);
-		if(rs_trace.fraction == 1.0 ) return true;
+		if(rs_trace.fraction == 1.0f ) return true;
 		return false;
 }
 
@@ -135,12 +153,12 @@ qboolean Bot_traceY (edict_t *ent,edict_t *other)
 		tty[2] += 16;
 
 		rs_trace = gi.trace (ttx, NULL, NULL, tty ,ent, CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME);
-		if(rs_trace.fraction == 1.0 ) return true;
+		if(rs_trace.fraction == 1.0f ) return true;
 		return false;
 }
 
 //
-// BOT用可視判定 2
+// visual judgment for bot 2
 //
 
 qboolean Bot_trace2 (edict_t *ent,vec3_t ttz)
@@ -152,12 +170,12 @@ qboolean Bot_trace2 (edict_t *ent,vec3_t ttz)
 		else ttx[2] -= 12;
 
 		rs_trace = gi.trace (ttx, NULL, NULL, ttz ,ent, CONTENTS_SOLID | CONTENTS_LAVA | CONTENTS_SLIME /*| CONTENTS_TRANSLUCENT*/);
-		if(rs_trace.fraction != 1.0 ) return false;
+		if(rs_trace.fraction != 1.0f ) return false;
 		return true;
 }
 
 //
-// BOT用可視判定 3
+// visual judgment for bot 3
 //
 
 qboolean Bot_traceS (edict_t *ent,edict_t *other)
@@ -177,7 +195,7 @@ qboolean Bot_traceS (edict_t *ent,edict_t *other)
 
 	rs_trace = gi.trace (start, NULL, NULL, end ,ent,CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME);
 
-	if(rs_trace.fraction != 1.0 ) return false;
+	if(rs_trace.fraction != 1.0f ) return false;
 	return true;
 
 WATERMODE:
@@ -191,7 +209,7 @@ WATERMODE:
 			if(rs_trace.surface->flags & SURF_WARP) return false;
 		}
 		rs_trace = gi.trace (start, NULL, NULL, end ,ent,CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME);
-		if(rs_trace.fraction != 1.0 ) return false;
+		if(rs_trace.fraction != 1.0f ) return false;
 		return true;
 	}
 	else if((mycont & CONTENTS_WATER) && other->waterlevel)
@@ -199,7 +217,7 @@ WATERMODE:
 		VectorCopy(other->s.origin,end);
 		end[2] -= 16;
 		rs_trace = gi.trace (start, NULL, NULL, end ,ent,CONTENTS_SOLID | CONTENTS_WINDOW );
-		if(rs_trace.fraction != 1.0 ) return false;	
+		if(rs_trace.fraction != 1.0f ) return false;	
 		return true;
 	}
 
@@ -212,12 +230,12 @@ WATERMODE:
 		{
 			if(rs_trace.surface->flags & SURF_WARP) return false;
 		}		
-//		if(rs_trace.fraction != 1.0 ) return false;	
+//		if(rs_trace.fraction != 1.0f ) return false;	
 //		return true;
 	}
 
 	rs_trace = gi.trace (start, NULL, NULL, end ,ent,CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME);
-	if(rs_trace.fraction != 1.0 ) return false;
+	if(rs_trace.fraction != 1.0f ) return false;
 	return true;
 }
 
@@ -225,7 +243,7 @@ WATERMODE:
 
 
 //
-// VEC値からyawを得る
+// get yaw from vec value
 //
 
 float Get_yaw (vec3_t vec)
@@ -266,7 +284,7 @@ float Get_pitch (vec3_t vec)
 }
 
 //
-// VEC値とyaw値の角度差を得る
+// obtain the angular difference between the vec value and the yaw value
 //
 
 float Get_vec_yaw (vec3_t vec,float yaw)
@@ -283,7 +301,7 @@ float Get_vec_yaw (vec3_t vec,float yaw)
 		return vecsyaw;
 }
 
-//yaw に対するvecの相対
+//relative of vec to yaw
 float Get_vec_yaw2 (vec3_t vec,float yaw)
 {
 		float		vecsyaw;
@@ -296,4 +314,3 @@ float Get_vec_yaw2 (vec3_t vec,float yaw)
 
 		return vecsyaw;
 }
-

@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 #include "bot.h"
 #include "g_ctf.h"
@@ -155,7 +173,7 @@ void SetRespawn (edict_t *ent, float delay)
 	ent->flags |= FL_RESPAWN;
 	ent->svflags |= SVF_NOCLIENT;
 	ent->solid = SOLID_NOT;
-	ent->nextthink = level.time + delay;
+	ent->nextthink = level.framenum + delay * BASE_FRAMERATE;
 	ent->think = DoRespawn;
 	gi.linkentity (ent);
 }
@@ -183,14 +201,14 @@ qboolean Pickup_Powerup (edict_t *ent, edict_t *other)
 		if (((int)dmflags->value & DF_INSTANT_ITEMS) || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM)))
 		{
 			if ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM))
-				quad_drop_timeout_hack = (ent->nextthink - level.time) / FRAMETIME;
+				quad_drop_timeout_hack = ent->nextthink - level.framenum;
 			ent->item->use (other, ent->item);
 		}
 		// RAFAEL
 		else if (((int)dmflags->value & DF_INSTANT_ITEMS) || ((ent->item->use == Use_QuadFire) && (ent->spawnflags & DROPPED_PLAYER_ITEM)))
 		{
 			if ((ent->item->use == Use_QuadFire) && (ent->spawnflags & DROPPED_PLAYER_ITEM))
-				quad_fire_drop_timeout_hack = (ent->nextthink - level.time) / FRAMETIME;
+				quad_fire_drop_timeout_hack = ent->nextthink - level.framenum;
 			ent->item->use (other, ent->item);
 		}
 	}
@@ -206,8 +224,8 @@ void Drop_General (edict_t *ent, gitem_t *item)
 }
 
 float Get_yaw (vec3_t vec);
-//edict_t *GetBotFlag1();	//チーム1の旗
-//edict_t *GetBotFlag2();  //チーム2の旗 
+//edict_t *GetBotFlag1(); // team 1 flag
+//edict_t *GetBotFlag2(); // team 2 flag
 //======================================================================
 qboolean Pickup_Navi (edict_t *ent, edict_t *other)
 {
@@ -241,7 +259,7 @@ qboolean Pickup_Navi (edict_t *ent, edict_t *other)
 					|| ent->union_ent->moveinfo.state == PSTATE_BOTTOM) other->client->zc.zcstate |= STS_W_ONDOORUP;
 			}
 			//j = other->client->zc.routeindex - 10;
-			//ルートのアップデート
+			// route update
 			for(i =  - MAX_DOORSEARCH; i <  MAX_DOORSEARCH  ;i++)
 			{
 				if(i <= 0) j = other->client->zc.routeindex - (MAX_DOORSEARCH - i) ;
@@ -297,10 +315,10 @@ qboolean Pickup_Navi (edict_t *ent, edict_t *other)
 		SetRespawn (ent, 1000000);
 		ent->solid = SOLID_NOT;
 	}
-	//roamnavi やめた
+	// roamnavi quit
 	else if( ent->classname[6] == '2')
 	{
-		//ルートのアップデート
+		// route update
 		for(i = 0;i < 10;i++)
 		{
 			if((other->client->zc.routeindex + i) >= CurrentIndex) break;
@@ -736,7 +754,7 @@ void MegaHealth_think (edict_t *self)
 //ZOID		
 		)
 	{
-		self->nextthink = level.time + 1;
+		self->nextthink = level.framenum + 1 * BASE_FRAMERATE;
 		self->owner->health -= 1;
 		return;
 	}
@@ -786,7 +804,7 @@ qboolean Pickup_Health (edict_t *ent, edict_t *other)
 	)
 	{
 		ent->think = MegaHealth_think;
-		ent->nextthink = level.time + 5;
+		ent->nextthink = level.framenum + 5 * BASE_FRAMERATE;
 		ent->owner = other;
 		ent->flags |= FL_RESPAWN;
 		ent->svflags |= SVF_NOCLIENT;
@@ -933,6 +951,7 @@ void Use_PowerArmor (edict_t *ent, gitem_t *item)
 	if (ent->flags & FL_POWER_ARMOR)
 	{
 		ent->flags &= ~FL_POWER_ARMOR;
+		//gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0); // todo
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);	//FIXME powering down sound
 	}
 	else
@@ -944,6 +963,7 @@ void Use_PowerArmor (edict_t *ent, gitem_t *item)
 			return;
 		}
 		ent->flags |= FL_POWER_ARMOR;
+		//gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0); // todo
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);	//FIXME powering up sound
 	}
 }
@@ -1017,12 +1037,12 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 	{
 
 		// flash the screen
-		other->client->bonus_alpha = 0.25;	
+		other->client->bonus_alpha = 0.25f;	
 	
 		// show icon and name on status bar
 		other->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->item->icon);
 		other->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS+ITEM_INDEX(ent->item);
-		other->client->pickup_msg_time = level.time + 3.0;
+		other->client->pickup_msg_framenum = level.framenum + 3.0f * BASE_FRAMERATE;
 
 		// change selected item
 		if (ent->item->use)
@@ -1056,7 +1076,7 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 //	else gi.bprintf(PRINT_HIGH,"get %s %x inv %i!\n",ent->classname,ent->spawnflags,other->client->pers.inventory[ITEM_INDEX(ent->item)]);
 
 	k = false;
-	//flag set ファンクションの上にある場合は無視
+	// ignore if above the flag set function
 	if(ent->groundentity) if(ent->groundentity->union_ent) k = true;
 
 	//route update
@@ -1114,7 +1134,7 @@ static void drop_make_touchable (edict_t *ent)
 	ent->touch = Touch_Item;
 	if (deathmatch->value)
 	{
-		ent->nextthink = level.time + 29;
+		ent->nextthink = level.framenum + 29 * BASE_FRAMERATE;
 		ent->think = G_FreeEdict;
 	}
 }
@@ -1161,7 +1181,7 @@ edict_t *Drop_Item (edict_t *ent, gitem_t *item)
 	dropped->velocity[2] = 300;
 
 	dropped->think = drop_make_touchable;
-	dropped->nextthink = level.time + 1;
+	dropped->nextthink = level.framenum + 1 * BASE_FRAMERATE;
 
 	gi.linkentity (dropped);
 
@@ -1173,7 +1193,7 @@ void Use_Item (edict_t *ent, edict_t *other, edict_t *activator)
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->use = NULL;
 
-	if (ent->spawnflags & 2)	// NO_TOUCH
+	if (ent->spawnflags & ITEM_NO_TOUCH)
 	{
 		ent->solid = SOLID_BBOX;
 		ent->touch = NULL;
@@ -1215,7 +1235,7 @@ void droptofloor (edict_t *ent)
 		gi.setmodel (ent, ent->model);
 	else
 		gi.setmodel (ent, ent->item->world_model);
-	if(ent->classname[6] == 'F')	ent->s.modelindex = 0; //かくせ
+	if(ent->classname[6] == 'F')	ent->s.modelindex = 0; // hidden
 
 	ent->solid = SOLID_TRIGGER;
 	ent->movetype = MOVETYPE_TOSS;  
@@ -1254,12 +1274,12 @@ void droptofloor (edict_t *ent)
 		ent->solid = SOLID_NOT;
 		if (ent == ent->teammaster)
 		{
-			ent->nextthink = level.time + FRAMETIME;
+			ent->nextthink = level.framenum + 1;
 			ent->think = DoRespawn;
 		}
 	}
 
-	if (ent->spawnflags & 2)	// NO_TOUCH
+	if (ent->spawnflags & ITEM_NO_TOUCH)
 	{
 		ent->solid = SOLID_BBOX;
 		ent->touch = NULL;
@@ -1267,7 +1287,7 @@ void droptofloor (edict_t *ent)
 		ent->s.renderfx &= ~RF_GLOW;
 	}
 
-	if (ent->spawnflags & 1)	// TRIGGER_SPAWN
+	if (ent->spawnflags & ITEM_TRIGGER_SPAWN)
 	{
 		ent->svflags |= SVF_NOCLIENT;
 		ent->solid = SOLID_NOT;
@@ -1373,7 +1393,7 @@ void droptofloor2 (edict_t *ent)
 	v = tv(8,8,15);
 	VectorCopy (v, ent->maxs);
 /////////
-	if(ent->union_ent && Q_stricmp (ent->classname,"R_navi2")) //2は移動なし
+	if(ent->union_ent && Q_stricmp (ent->classname,"R_navi2")) // 2 does not move
 	{
 //		dest[0] = (ent->union_ent->s.origin[0] + ent->union_ent->mins[0] + ent->union_ent->s.origin[0] + ent->union_ent->maxs[0])/2;//ent->s.origin[0];
 //		dest[1] = (ent->union_ent->s.origin[1] + ent->union_ent->mins[1] + ent->union_ent->s.origin[1] + ent->union_ent->maxs[1])/2;
@@ -1404,7 +1424,7 @@ void droptofloor2 (edict_t *ent)
 		gi.setmodel (ent, ent->model);
 	else
 		gi.setmodel (ent, ent->item->world_model);*/
-	ent->s.modelindex = 0;				//かくせ！
+	ent->s.modelindex = 0; // hide!
 //ent->s.modelindex =gi.modelindex ("models/items/armor/body/tris.md2");
 	if(Q_stricmp (ent->classname,"R_navi3") == 0) ent->solid = SOLID_NOT;
 	else ent->solid = SOLID_TRIGGER;
@@ -1435,7 +1455,7 @@ void droptofloor2 (edict_t *ent)
 		ent->solid = SOLID_NOT;
 		if (ent == ent->teammaster)
 		{
-			ent->nextthink = level.time + FRAMETIME;
+			ent->nextthink = level.framenum + 1;
 			ent->think = DoRespawn;
 		}
 	}
@@ -1616,7 +1636,7 @@ void ZIGFlagThink(edict_t *ent)
 	
 	ent->owner = NULL;
 	ent->s.frame = 173 + (((ent->s.frame - 173) + 1) % 16);
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 }
 
 qboolean ZIGDrop_Flag(edict_t *ent, gitem_t *item)
@@ -1626,7 +1646,8 @@ qboolean ZIGDrop_Flag(edict_t *ent, gitem_t *item)
 	if(zflag_ent) return false;
 
 	tech = Drop_Item(ent, item);
-	tech->nextthink = level.time + FRAMETIME * 10;//level.time + CTF_TECH_TIMEOUT;
+	//tech->nextthink = level.time + FRAMETIME * 10;//level.time + CTF_TECH_TIMEOUT;
+	tech->nextthink = level.framenum + 10; // todo
 	tech->think = ZIGFlagThink;//TechThink;
 	if(ent->client) ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
 	/*ent*/tech->s.frame = 173;
@@ -1657,8 +1678,8 @@ Items can't be immediately dropped to floor, because they might
 be on an entity that hasn't spawned yet.
 ============
 */
-void SetBotFlag1(edict_t *ent);	//チーム1の旗
-void SetBotFlag2(edict_t *ent);  //チーム2の旗
+void SetBotFlag1(edict_t *ent); // team 1 flag
+void SetBotFlag2(edict_t *ent); // team 2 flag
 
 void SpawnItem (edict_t *ent, gitem_t *item)
 {
@@ -1733,7 +1754,7 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 //ZOID
 
 	ent->item = item;
-	ent->nextthink = level.time + 2 * FRAMETIME;    // items start after other solids
+	ent->nextthink = level.framenum + 2;    // items start after other solids
 	ent->think = droptofloor;
 	ent->s.effects = item->world_model_flags;
 	ent->s.renderfx = RF_GLOW;
@@ -1757,7 +1778,7 @@ void SpawnItem3 (edict_t *ent, gitem_t *item)
 	//	PrecacheItem (item);
 
 	ent->item = item;
-	ent->nextthink = level.time + 2 * FRAMETIME;    // items start after other solids
+	ent->nextthink = level.framenum + 2;    // items start after other solids
 	ent->think = droptofloor2;
 	ent->s.effects = 0;
 	ent->s.renderfx = 0;

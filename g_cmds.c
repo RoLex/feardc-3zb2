@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 #include "m_player.h"
 #include "bot.h"
@@ -303,8 +321,6 @@ argv(0) god
 */
 void Cmd_God_f (edict_t *ent)
 {
-	char	*msg;
-
 	if (deathmatch->value && !sv_cheats->value)
 	{
 		gi.cprintf (ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -313,11 +329,9 @@ void Cmd_God_f (edict_t *ent)
 
 	ent->flags ^= FL_GODMODE;
 	if (!(ent->flags & FL_GODMODE) )
-		msg = "godmode OFF\n";
+		gi.cprintf(ent, PRINT_HIGH, "godmode OFF\n");
 	else
-		msg = "godmode ON\n";
-
-	gi.cprintf (ent, PRINT_HIGH, msg);
+		gi.cprintf(ent, PRINT_HIGH, "godmode ON\n");
 }
 
 
@@ -332,8 +346,6 @@ argv(0) notarget
 */
 void Cmd_Notarget_f (edict_t *ent)
 {
-	char	*msg;
-
 	if (deathmatch->value && !sv_cheats->value)
 	{
 		gi.cprintf (ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -342,11 +354,9 @@ void Cmd_Notarget_f (edict_t *ent)
 
 	ent->flags ^= FL_NOTARGET;
 	if (!(ent->flags & FL_NOTARGET) )
-		msg = "notarget OFF\n";
+		gi.cprintf(ent, PRINT_HIGH, "notarget OFF\n");
 	else
-		msg = "notarget ON\n";
-
-	gi.cprintf (ent, PRINT_HIGH, msg);
+		gi.cprintf(ent, PRINT_HIGH, "notarget ON\n");
 }
 
 
@@ -359,8 +369,6 @@ argv(0) noclip
 */
 void Cmd_Noclip_f (edict_t *ent)
 {
-	char	*msg;
-
 	if (deathmatch->value && !sv_cheats->value)
 	{
 		gi.cprintf (ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
@@ -370,15 +378,13 @@ void Cmd_Noclip_f (edict_t *ent)
 	if (ent->movetype == MOVETYPE_NOCLIP)
 	{
 		ent->movetype = MOVETYPE_WALK;
-		msg = "noclip OFF\n";
+		gi.cprintf(ent, PRINT_HIGH, "noclip OFF\n");
 	}
 	else
 	{
 		ent->movetype = MOVETYPE_NOCLIP;
-		msg = "noclip ON\n";
+		gi.cprintf(ent, PRINT_HIGH, "noclip ON\n");
 	}
-
-	gi.cprintf (ent, PRINT_HIGH, msg);
 }
 
 
@@ -749,7 +755,7 @@ void Cmd_Kill_f (edict_t *ent)
 		return;
 //ZOID
 
-	if((level.time - ent->client->respawn_time) < 5)
+	if ((level.framenum - ent->client->respawn_framenum) < 5 * BASE_FRAMERATE) // todo: / BASE_FRAMERATE ?
 		return;
 	ent->flags &= ~FL_GODMODE;
 	ent->health = 0;
@@ -896,10 +902,11 @@ Cmd_Say_f
 */
 void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 {
-	int		j;
+	int		/*i, */j;
 	edict_t	*other;
 	char	*p;
 	char	text[2048];
+	//gclient_t *cl;
 
 	if (gi.argc () < 2 && !arg0)
 		return;
@@ -908,9 +915,9 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 		team = false;
 
 	if (team)
-		Com_sprintf (text, sizeof(text), "(%s): ", ent->client->pers.netname);
+		Com_sprintf(text, sizeof(text), "(%s): ", ent->client->pers.netname);
 	else
-		Com_sprintf (text, sizeof(text), "%s: ", ent->client->pers.netname);
+		Com_sprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
 
 	if (arg0)
 	{
@@ -936,6 +943,31 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 
 	strcat(text, "\n");
 
+	/*
+    if (flood_msgs->value) { // todo
+        cl = ent->client;
+
+        if (level.time < cl->flood_locktill) {
+            gi.cprintf(ent, PRINT_HIGH, "You can't talk for %d more seconds\n",
+                       (int)(cl->flood_locktill - level.time));
+            return;
+        }
+        i = cl->flood_whenhead - flood_msgs->value + 1;
+        if (i < 0)
+            i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
+        if (cl->flood_when[i] &&
+            level.time - cl->flood_when[i] < flood_persecond->value) {
+            cl->flood_locktill = level.time + flood_waitdelay->value;
+            gi.cprintf(ent, PRINT_CHAT, "Flood protection:  You can't talk for %d seconds.\n",
+                       (int)flood_waitdelay->value);
+            return;
+        }
+        cl->flood_whenhead = (cl->flood_whenhead + 1) %
+                             (sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
+        cl->flood_when[cl->flood_whenhead] = level.time;
+    }
+    */
+
 	if (dedicated->value)
 		gi.cprintf(NULL, PRINT_CHAT, "%s", text);
 
@@ -956,7 +988,40 @@ void Cmd_Say_f (edict_t *ent, qboolean team, qboolean arg0)
 		gi.cprintf(other, PRINT_CHAT, "%s", text);
 	}
 }
-//スナイパー用ZoomIn Out
+
+/*
+void Cmd_PlayerList_f(edict_t *ent) // todo
+{
+    int i;
+    char st[80];
+    char text[1400];
+    edict_t *e2;
+
+    // connect time, ping, score, name
+    *text = 0;
+    for (i = 0, e2 = g_edicts + 1; i < maxclients->value; i++, e2++) {
+        if (!e2->inuse)
+            continue;
+
+        Com_sprintf(st, sizeof(st), "%02d:%02d %4d %3d %s%s\n",
+                   (level.framenum - e2->client->resp.enterframe) / 600,
+                   ((level.framenum - e2->client->resp.enterframe) % 600) / 10,
+                   e2->client->ping,
+                   e2->client->resp.score,
+                   e2->client->pers.netname,
+                   e2->client->resp.spectator ? " (spectator)" : "");
+        if (strlen(text) + strlen(st) > sizeof(text) - 50) {
+            sprintf(text + strlen(text), "And more...\n");
+            gi.cprintf(ent, PRINT_HIGH, "%s", text);
+            return;
+        }
+        strcat(text, st);
+    }
+    gi.cprintf(ent, PRINT_HIGH, "%s", text);
+}
+*/
+
+// zoom in out for sniper
 void Cmd_ZoomIn(edict_t *ent)
 {
 	if( ent->client->zc.autozoom )
@@ -1026,7 +1091,7 @@ void Cmd_AutoZoom(edict_t *ent)
 	}
 }
 
-//chain の undo
+// chain undo
 void UndoChain(edict_t *ent ,int step)
 {
 	int	count,i;
@@ -1097,7 +1162,7 @@ void ClientCommand (edict_t *ent)
 		return;
 	}
 
-	if (level.intermissiontime)
+	if (level.intermission_framenum)
 		return;
 
 	if (Q_stricmp (cmd, "use") == 0)
@@ -1142,6 +1207,10 @@ void ClientCommand (edict_t *ent)
 		Cmd_PutAway_f (ent);
 	else if (Q_stricmp (cmd, "wave") == 0)
 		Cmd_Wave_f (ent);
+	/*
+    else if (Q_stricmp(cmd, "playerlist") == 0) // todo
+        Cmd_PlayerList_f(ent);
+    */
 	else if (Q_stricmp (cmd, "zoomin") == 0)		//zoom
 		Cmd_ZoomIn(ent);
 	else if (Q_stricmp (cmd, "zoomout") == 0)

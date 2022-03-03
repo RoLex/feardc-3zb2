@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 #include "m_player.h"
 #include "bot.h"
@@ -97,7 +115,7 @@ void SP_info_player_start(edict_t *self)
 	{
 		// invoke one of our gross, ugly, disgusting hacks
 		self->think = SP_CreateCoopSpots;
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.framenum + 1;
 	}
 }
 
@@ -143,7 +161,7 @@ void SP_info_player_coop(edict_t *self)
 	{
 		// invoke one of our gross, ugly, disgusting hacks
 		self->think = SP_FixCoopSpots;
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.framenum + 1;
 	}
 }
 
@@ -173,7 +191,7 @@ qboolean IsFemale (edict_t *ent)
 	if (!ent->client)
 		return false;
 
-	info = Info_ValueForKey (ent->client->pers.userinfo, "skin");
+	info = Info_ValueForKey (ent->client->pers.userinfo, "skin"); // todo: "gender"
 	if (info[0] == 'f' || info[0] == 'F')
 		return true;
 	return false;
@@ -451,11 +469,11 @@ void TossClientWeapon (edict_t *self)
 	
 
 	if (item && quad)
-		spread = 22.5;
+		spread = 22.5f;
 	else if (item && quadfire)
-		spread = 12.5;
+		spread = 12.5f;
 	else
-		spread = 0.0;
+		spread = 0.0f;
 
 	if (item)
 	{
@@ -474,7 +492,8 @@ void TossClientWeapon (edict_t *self)
 		drop->spawnflags |= DROPPED_PLAYER_ITEM;
 
 		drop->touch = Touch_Item;
-		drop->nextthink = level.time + (self->client->quad_framenum - level.framenum) * FRAMETIME;
+		//drop->nextthink = level.time + (self->client->quad_framenum - level.framenum) * FRAMETIME; // todo: framenum
+		drop->nextthink = self->client->quad_framenum;
 		drop->think = G_FreeEdict;
 		if(enemy) enemy->client->zc.second_target = drop;
 	}
@@ -487,7 +506,8 @@ void TossClientWeapon (edict_t *self)
 		drop->spawnflags |= DROPPED_PLAYER_ITEM;
 
 		drop->touch = Touch_Item;
-		drop->nextthink = level.time + (self->client->quadfire_framenum - level.framenum) * FRAMETIME;
+		//drop->nextthink = level.time + (self->client->quadfire_framenum - level.framenum) * FRAMETIME; // todo: framenum
+		drop->nextthink = self->client->quadfire_framenum;
 		drop->think = G_FreeEdict;
 		if(enemy) enemy->client->zc.second_target = drop;
 	}
@@ -555,14 +575,14 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		if(self->svflags & SVF_MONSTER)
 		{
 			LookAtKiller (self, inflictor, attacker);
-			self->nextthink = level.time + FRAMETIME;
+			self->nextthink = level.framenum + 1;
 			self->think = Bot_Think;
-			self->client->respawn_time = level.time + 2.0;
+			self->client->respawn_framenum = level.framenum + 2.0f * BASE_FRAMERATE;
 			self->s.skinnum = (self - g_edicts - 1);
 		}
 		else
 		{
-			self->client->respawn_time = level.time + 1.0;
+			self->client->respawn_framenum = level.framenum + 1.0f * BASE_FRAMERATE;
 			LookAtKiller (self, inflictor, attacker);
 		}
 		self->client->ps.pmove.pm_type = PM_DEAD;
@@ -571,7 +591,7 @@ void player_die (edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 		if(ctf->value) CTFFragBonuses(self, inflictor, attacker);
 //ZOID
 
-		//旗持ってる場合は落とす
+		// if you have a flag, drop it
 		if(self->client->pers.inventory[ITEM_INDEX(zflag_item)])
 			zflag_item->drop(self,zflag_item);
 
@@ -1053,7 +1073,16 @@ void CopyToBodyQue (edict_t *ent)
 	body = &g_edicts[(int)maxclients->value + level.body_que + 1];
 	level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
 
-	// FIXME: send an effect on the removed body
+	// send an effect on the removed body, todo: test
+	/*
+    if (body->s.modelindex) {
+        gi.WriteByte(svc_temp_entity);
+        gi.WriteByte(TE_BLOOD);
+        gi.WritePosition(body->s.origin);
+        gi.WriteDir(vec3_origin);
+        gi.multicast(body->s.origin, MULTICAST_PVS);
+    }
+    */
 
 	gi.unlinkentity (ent);
 
@@ -1061,7 +1090,7 @@ void CopyToBodyQue (edict_t *ent)
 	body->s = ent->s;
 	body->s.number = body - g_edicts;
 
-	//強引にフレームセット
+	// forcibly frameset
 	if(body->s.modelindex == skullindex || body->s.modelindex == headindex) body->s.frame = 0;
 
 	body->svflags = ent->svflags;
@@ -1108,7 +1137,7 @@ void respawn (edict_t *self)
 		self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 		self->client->ps.pmove.pm_time = 14;
 
-		self->client->respawn_time = level.time;
+		self->client->respawn_framenum = level.framenum;
 		return;
 	}
 
@@ -1188,7 +1217,7 @@ void spectator_respawn (edict_t *ent)
 		ent->client->ps.pmove.pm_time = 14;
 	}
 
-	ent->client->respawn_time = level.time;
+	ent->client->respawn_framenum = level.framenum;
 
 	if (ent->client->pers.spectator) 
 		gi.bprintf (PRINT_HIGH, "%s has moved to the sidelines\n", ent->client->pers.netname);
@@ -1289,7 +1318,7 @@ void PutClientInServer (edict_t *ent)
 	ent->mass = 200;
 	ent->solid = SOLID_BBOX;
 	ent->deadflag = DEAD_NO;
-	ent->air_finished = level.time + 12;
+	ent->air_finished_framenum = level.framenum + 12 * BASE_FRAMERATE;
 	ent->clipmask = MASK_PLAYERSOLID;
 	ent->model = "players/male/tris.md2";
 	ent->pain = player_pain;
@@ -1473,7 +1502,7 @@ void ClientBegin (edict_t *ent)
 		PutClientInServer (ent);
 	}
 
-	if (level.intermissiontime)
+	if (level.intermission_framenum)
 	{
 		MoveClientToIntermission (ent);
 	}
@@ -1650,6 +1679,7 @@ qboolean ClientConnect (edict_t *ent, char *userinfo)
 	if (game.maxclients > 1)
 		gi.dprintf ("%s connected\n", ent->client->pers.netname);
 
+	//ent->svflags = 0; // todo: make sure we start with known default
 	ent->client->pers.connected = true;
 	return true;
 }
@@ -1773,7 +1803,7 @@ void ChainPodThink (edict_t *ent)
 			gi.multicast (ent->s.origin, MULTICAST_PHS);
 		}
 	}
-	ent->nextthink = level.time + FRAMETIME * 10;
+	ent->nextthink = level.framenum + 10;
 }
 qboolean Bot_traceX (edict_t *ent,edict_t *other);
 qboolean ChkTFlg();
@@ -1822,7 +1852,7 @@ qboolean TraceX (edict_t *ent,vec3_t p2)
 	}
 
 	rs_trace = gi.trace (ent->s.origin, v1, v2, p2 ,ent, contents );
-	if(rs_trace.fraction == 1.0 && !rs_trace.allsolid && !rs_trace.startsolid ) return true;
+	if(rs_trace.fraction == 1.0f && !rs_trace.allsolid && !rs_trace.startsolid ) return true;
 
 	if(ent->client->zc.route_trace && rs_trace.ent && (ent->svflags & SVF_MONSTER)) 
 	{
@@ -1981,7 +2011,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 
 		}
 		else if(((/*ent->velocity[2] > 10 &&*/ !ent->groundentity && wasground == true)
-			|| (/*ent->velocity[2] < -0.5 &&*/ ent->groundentity && wasground == false))
+			|| (/*ent->velocity[2] < -0.5f &&*/ ent->groundentity && wasground == false))
 			&& Route[CurrentIndex - 1].state <= GRS_ITEMS)
 		{
 			j = false;
@@ -1989,7 +2019,7 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 			VectorCopy(ent->s.old_origin,v);
 			v[2] -= 2;
 			rs_trace = gi.trace(ent->s.old_origin,ent->mins ,ent->maxs, v ,ent,MASK_PLAYERSOLID);
-			if(rs_trace.fraction != 1.0) j = true;
+			if(rs_trace.fraction != 1.0f) j = true;
 
 			if(old_ground)
 			{
@@ -2153,11 +2183,11 @@ void ClientThink (edict_t *ent, usercmd_t *ucmd)
 	level.current_entity = ent;
 	client = ent->client;
 
-	if (level.intermissiontime)
+	if (level.intermission_framenum)
 	{
 		client->ps.pmove.pm_type = PM_FREEZE;
 		// can exit intermission after five seconds
-		if (level.time > level.intermissiontime + 5.0 
+		if (level.framenum > level.intermission_framenum + 5.0f * BASE_FRAMERATE
 			&& (ucmd->buttons & BUTTON_ANY) )
 			level.exitintermission = true;
 		return;
@@ -2356,14 +2386,14 @@ void ClientBeginServerFrame (edict_t *ent)
 {
 	gclient_t	*client;
 
-	if (level.intermissiontime)
+	if (level.intermission_framenum)
 		return;
 
 	client = ent->client;
 
 	if (deathmatch->value &&
 		client->pers.spectator != client->resp.spectator &&
-		(level.time - client->respawn_time) >= 5) {
+		(level.framenum - client->respawn_framenum) >= 5 * BASE_FRAMERATE) {
 		spectator_respawn(ent);
 		return;
 	}
@@ -2381,7 +2411,7 @@ void ClientBeginServerFrame (edict_t *ent)
 	if (ent->deadflag)
 	{
 		// wait for any button just going down
-		if ( level.time > client->respawn_time)
+		if (level.framenum > client->respawn_framenum)
 		{
 			if (client->latched_buttons ||
 				(deathmatch->value && ((int)dmflags->value & DF_FORCE_RESPAWN) ) )

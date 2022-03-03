@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // g_local.h -- local definitions for game module
 
 #include "q_shared.h"
@@ -16,7 +34,7 @@
 //ZOID
 
 // the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"baseq2"
+#define	GAMEVERSION	"3zb2"
 
 // protocol bytes that can be directly added to messages
 #define	svc_muzzleflash		1
@@ -25,11 +43,12 @@
 #define	svc_layout			4
 #define	svc_inventory		5
 #define	svc_stufftext		11
+
 //==================================================================
 
 // view pitching times
-#define DAMAGE_TIME		0.5
-#define	FALL_TIME		0.3
+#define DAMAGE_TIME		0.5f
+#define	FALL_TIME		0.3f
 
 
 // edict->spawnflags
@@ -57,7 +76,8 @@
 #define FL_RESPAWN				0x80000000	// used for item respawning
 
 
-#define	FRAMETIME		0.1
+#define	FRAMETIME		0.1f
+#define BASE_FRAMERATE  10
 
 // memory tags to allow dynamic memory to be cleaned up
 #define	TAG_GAME	765		// clear when unloading the dll
@@ -68,23 +88,20 @@
 
 #define BODY_QUEUE_SIZE		8
 
-typedef enum
-{
+typedef enum {
 	DAMAGE_NO,
 	DAMAGE_YES,			// will take damage if hit
 	DAMAGE_AIM			// auto targeting recognizes this
 } damage_t;
 
-typedef enum 
-{
+typedef enum {
 	WEAPON_READY, 
 	WEAPON_ACTIVATING,
 	WEAPON_DROPPING,
 	WEAPON_FIRING
 } weaponstate_t;
 
-typedef enum
-{
+typedef enum {
 	AMMO_BULLETS,
 	AMMO_SHELLS,
 	AMMO_ROCKETS,
@@ -180,8 +197,7 @@ typedef enum
 #define	CARRIER		3
 
 // edict->movetype values
-typedef enum
-{
+typedef enum {
 MOVETYPE_NONE,			// never moves
 MOVETYPE_NOCLIP,		// origin and angles change with no interaction
 MOVETYPE_PUSH,			// no clip to world, push on box contact
@@ -328,7 +344,7 @@ typedef struct
 	char		nextmap[MAX_QPATH];		// go here when fraglimit is hit
 
 	// intermission state
-	float		intermissiontime;		// time the intermission was started
+	int			intermission_framenum;		// time the intermission was started
 	char		*changemap;
 	int			exitintermission;
 	vec3_t		intermission_origin;
@@ -392,22 +408,22 @@ typedef struct
 	// fixed data
 	vec3_t		start_origin;
 	vec3_t		start_angles;
-	vec3_t		end_origin;			//BFGのターゲットポイントに不正使用
+	vec3_t		end_origin; // unauthorized use on bfg target points
 	vec3_t		end_angles;
 
-	int			sound_start;		//スナイパーのアクティベートフラグ
+	int			sound_start; // sniper activation flag
 	int			sound_middle;
-	int			sound_end;			//hokutoのクラス
+	int			sound_end; // hokuto class
 
 	float		accel;
-	float		speed;				//bot 落下時の移動量に不正使用
-	float		decel;				//水面滞在時間に不正使用
-	float		distance;			//スナイパー用FOV値
+	float		speed; // unauthorized use of bot movement amount when falling
+	float		decel; // unauthorized use during staying on the surface of the water
+	float		distance; // fov value for sniper
 
 	float		wait;
 
 	// state data
-	int			state;				//CTFステータスに不正使用
+	int			state; // unauthorized use of ctf status
 	vec3_t		dir;
 	float		current_speed;
 	float		move_speed;
@@ -451,16 +467,16 @@ typedef struct
 	void		(*sight)(edict_t *self, edict_t *other);
 	qboolean	(*checkattack)(edict_t *self);
 
-	float		pausetime;
-	float		attack_finished;
+	int			pause_framenum;
+	int			attack_finished;
 
 	vec3_t		saved_goal;
-	float		search_time;
-	float		trail_time;
+	int			search_framenum;
+	int			trail_framenum;
 	vec3_t		last_sighting;
 	int			attack_state;
 	int			lefty;
-	float		idle_time;
+	int			idle_framenum;
 	int			linkcount;
 
 	int			power_armor_type;
@@ -540,7 +556,7 @@ extern	edict_t			*g_edicts;
 #define	CLOFS(x) (int)&(((gclient_t *)0)->x)
 
 #define random()	((rand () & 0x7fff) / ((float)0x7fff))
-#define crandom()	(2.0 * (random() - 0.5))
+#define crandom()	(2.0f * (random() - 0.5f))
 
 extern	cvar_t	*maxentities;
 extern	cvar_t	*deathmatch;
@@ -575,6 +591,12 @@ extern	cvar_t	*maxclients;
 extern	cvar_t	*maxspectators;
 
 extern	cvar_t	*filterban;
+
+/*
+extern  cvar_t  *flood_msgs; // todo
+extern  cvar_t  *flood_persecond;
+extern  cvar_t  *flood_waitdelay;
+*/
 
 //ponpoko
 extern	cvar_t	*gamepath;
@@ -620,7 +642,7 @@ typedef enum {
 	F_ITEM,				// index on disk, pointer in memory
 	F_CLIENT,			// index on disk, pointer in memory
 	F_FUNCTION,
-	F_MMOVE,
+	F_MMOVE, // todo: F_POINTER
 	F_IGNORE
 } fieldtype_t;
 
@@ -667,7 +689,7 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 // g_utils.c
 //
 qboolean	KillBox (edict_t *ent);
-void	G_ProjectSource (vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
+void	G_ProjectSource(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
 edict_t *G_Find (edict_t *from, int fieldofs, char *match);
 edict_t *findradius (edict_t *from, vec3_t org, float rad);
 edict_t *G_PickTarget (char *targetname);
@@ -928,14 +950,14 @@ typedef struct zgcl_s
 {
 	int			zclass;			//class no.
 
-// true client用 zoom フラグ	
+// zoom flag for true client
 	int			aiming;			//0-not 1-aiming  2-firing zoomingflag
-	float		distance;		//zoom中のFOV値
-	float		olddistance;	//旧zooming FOV値
+	float		distance; // fov value in zoom
+	float		olddistance; // old zooming fov value
 	qboolean	autozoom;		//autozoom
 	qboolean	lockon;			//lockon flag false-not true-locking
 
-// bot用	
+// for bot
 	int			zcstate;		//status
 
 	int			botskill;		//skill
@@ -1049,7 +1071,7 @@ struct gclient_s
 	vec3_t		oldviewangles;
 	vec3_t		oldvelocity;
 
-	float		next_drown_time;
+	int			next_drown_framenum;
 	int			old_waterlevel;
 	int			breather_sound;
 
@@ -1062,24 +1084,30 @@ struct gclient_s
 	qboolean	anim_run;
 
 	// powerup timers
-	float		quad_framenum;
-	float		invincible_framenum;
-	float		breather_framenum;
-	float		enviro_framenum;
+	int			quad_framenum;
+	int			invincible_framenum;
+	int			breather_framenum;
+	int			enviro_framenum;
 
-	qboolean	grenade_blew_up;
-	float		grenade_time;
+	qboolean		grenade_blew_up;
+	int			grenade_framenum;
 	// RAFAEL
-	float		quadfire_framenum;
+	int			quadfire_framenum;
 	qboolean	trap_blew_up;
-	float		trap_time;
+	float		trap_time; // todo: framenum
 	
 	int			silencer_shots;
 	int			weapon_sound;
 
-	float		pickup_msg_time;
+	int			pickup_msg_framenum;
 
-	float		respawn_time;		// can respawn when time > this
+	/*
+    float       flood_locktill;     // locked from talking, todo
+    float       flood_when[10];     // when messages were said
+    int         flood_whenhead;     // head pointer for when said
+    */
+    
+	int			respawn_framenum;		// can respawn when time > this
 
 //ZOID
 	void		*ctf_grapple;		// entity of grapple
@@ -1108,6 +1136,7 @@ struct edict_s
 
 	// FIXME: move these fields to a server private sv_entity_t
 	link_t		area;				// linked to a division node or leaf
+	// todo: list_t
 	
 	int			num_clusters;		// if -1, use headnode instead
 	int			clusternums[MAX_ENT_CLUSTERS];
@@ -1141,7 +1170,7 @@ struct edict_s
 	char		*classname;
 	int			spawnflags;
 
-	float		timestamp;
+	int			timestamp;
 
 	float		angle;			// set in qe3, -1 = up, -2 = down
 	char		*target;
@@ -1164,7 +1193,7 @@ struct edict_s
 	vec3_t		velocity;
 	vec3_t		avelocity;
 	int			mass;
-	float		air_finished;
+	int			air_finished_framenum;
 	float		gravity;		// per entity gravity multiplier (1.0 is normal)
 								// use for lowgrav artifact, flares
 
@@ -1173,7 +1202,7 @@ struct edict_s
 	float		yaw_speed;
 	float		ideal_yaw;
 
-	float		nextthink;
+	int			nextthink;
 	void		(*prethink) (edict_t *ent);
 	void		(*think)(edict_t *self);
 	void		(*blocked)(edict_t *self, edict_t *other);	//move to moveinfo?
@@ -1182,11 +1211,11 @@ struct edict_s
 	void		(*pain)(edict_t *self, edict_t *other, float kick, int damage);
 	void		(*die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
 
-	float		touch_debounce_time;		// are all these legit?  do we need more/less of them?
-	float		pain_debounce_time;
-	float		damage_debounce_time;
-	float		fly_sound_debounce_time;	//move to clientinfo
-	float		last_move_time;
+	int			touch_debounce_framenum;		// are all these legit?  do we need more/less of them?
+	int			pain_debounce_framenum;
+	int			damage_debounce_framenum;
+	int			fly_sound_debounce_framenum;	//move to clientinfo
+	int			last_move_framenum;
 
 	int			health;
 	int			max_health;
@@ -1194,7 +1223,7 @@ struct edict_s
 	int			deadflag;
 	qboolean	show_hostile;
 
-	float		powerarmor_time;
+	int			powerarmor_framenum;
 
 	char		*map;			// target_changelevel
 
@@ -1228,7 +1257,7 @@ struct edict_s
 	float		delay;			// before firing targets
 	float		random;
 
-	float		teleport_time;
+	int         last_sound_framenum;
 
 	int			watertype;
 	int			waterlevel;

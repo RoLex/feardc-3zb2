@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // g_turret.c
 
 #include "g_local.h"
@@ -17,12 +35,12 @@ void AnglesNormalize(vec3_t vec)
 
 float SnapToEights(float x)
 {
-	x *= 8.0;
-	if (x > 0.0)
-		x += 0.5;
+	x *= 8.0f;
+	if (x > 0.0f)
+		x += 0.5f;
 	else
-		x -= 0.5;
-	return 0.125 * (int)x;
+		x -= 0.5f;
+	return 0.125f * (int)x;
 }
 
 
@@ -97,17 +115,17 @@ void turret_breach_think (edict_t *self)
 	{
 		float	dmin, dmax;
 
-		dmin = fabs(self->pos1[YAW] - self->move_angles[YAW]);
+		dmin = fabsf(self->pos1[YAW] - self->move_angles[YAW]);
 		if (dmin < -180)
 			dmin += 360;
 		else if (dmin > 180)
 			dmin -= 360;
-		dmax = fabs(self->pos2[YAW] - self->move_angles[YAW]);
+		dmax = fabsf(self->pos2[YAW] - self->move_angles[YAW]);
 		if (dmax < -180)
 			dmax += 360;
 		else if (dmax > 180)
 			dmax -= 360;
-		if (fabs(dmin) < fabs(dmax))
+		if (fabsf(dmin) < fabsf(dmax))
 			self->move_angles[YAW] = self->pos1[YAW];
 		else
 			self->move_angles[YAW] = self->pos2[YAW];
@@ -133,9 +151,9 @@ void turret_breach_think (edict_t *self)
 	if (delta[1] < -1 * self->speed * FRAMETIME)
 		delta[1] = -1 * self->speed * FRAMETIME;
 
-	VectorScale (delta, 1.0/FRAMETIME, self->avelocity);
+	VectorScale (delta, 1.0f/FRAMETIME, self->avelocity);
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 
 	for (ent = self->teammaster; ent; ent = ent->teamchain)
 		ent->avelocity[1] = self->avelocity[1];
@@ -161,15 +179,15 @@ void turret_breach_think (edict_t *self)
 		target[2] = self->owner->s.origin[2];
 
 		VectorSubtract (target, self->owner->s.origin, dir);
-		self->owner->velocity[0] = dir[0] * 1.0 / FRAMETIME;
-		self->owner->velocity[1] = dir[1] * 1.0 / FRAMETIME;
+		self->owner->velocity[0] = dir[0] * 1.0f / FRAMETIME;
+		self->owner->velocity[1] = dir[1] * 1.0f / FRAMETIME;
 
 		// z
 		angle = self->s.angles[PITCH] * (M_PI*2 / 360);
 		target_z = SnapToEights(self->s.origin[2] + self->owner->move_origin[0] * tan(angle) + self->owner->move_origin[2]);
 
 		diff = target_z - self->owner->s.origin[2];
-		self->owner->velocity[2] = diff * 1.0 / FRAMETIME;
+		self->owner->velocity[2] = diff * 1.0f / FRAMETIME;
 
 		if (self->spawnflags & 65536)
 		{
@@ -227,7 +245,7 @@ void SP_turret_breach (edict_t *self)
 	self->blocked = turret_blocked;
 
 	self->think = turret_breach_finish_init;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 	gi.linkentity (self);
 }
 
@@ -282,9 +300,9 @@ void turret_driver_think (edict_t *self)
 {
 	vec3_t	target;
 	vec3_t	dir;
-	float	reaction_time;
+	int		reaction_time;
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 
 	if (self->enemy && (!self->enemy->inuse || self->enemy->health <= 0))
 		self->enemy = NULL;
@@ -293,7 +311,7 @@ void turret_driver_think (edict_t *self)
 	{
 		if (!FindTarget (self))
 			return;
-		self->monsterinfo.trail_time = level.time;
+		self->monsterinfo.trail_framenum = level.framenum;
 		self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
 	}
 	else
@@ -302,7 +320,7 @@ void turret_driver_think (edict_t *self)
 		{
 			if (self->monsterinfo.aiflags & AI_LOST_SIGHT)
 			{
-				self->monsterinfo.trail_time = level.time;
+				self->monsterinfo.trail_framenum = level.framenum;
 				self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
 			}
 		}
@@ -320,14 +338,14 @@ void turret_driver_think (edict_t *self)
 	vectoangles (dir, self->target_ent->move_angles);
 
 	// decide if we should shoot
-	if (level.time < self->monsterinfo.attack_finished)
+	if (level.framenum < self->monsterinfo.attack_finished)
 		return;
 
-	reaction_time = (3 - skill->value) * 1.0;
-	if ((level.time - self->monsterinfo.trail_time) < reaction_time)
+    reaction_time = (3 - skill->value) * 1.0f * BASE_FRAMERATE; // todo: / BASE_FRAMERATE ?
+    if ((level.framenum - self->monsterinfo.trail_framenum) < reaction_time)
 		return;
 
-	self->monsterinfo.attack_finished = level.time + reaction_time + 1.0;
+	self->monsterinfo.attack_finished = level.framenum + (reaction_time + 1.0f) * BASE_FRAMERATE;
 	//FIXME how do we really want to pass this along?
 	self->target_ent->spawnflags |= 65536;
 }
@@ -338,7 +356,7 @@ void turret_driver_link (edict_t *self)
 	edict_t	*ent;
 
 	self->think = turret_driver_think;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 
 	self->target_ent = G_PickTarget (self->target);
 	self->target_ent->owner = self;
@@ -407,7 +425,7 @@ void SP_turret_driver (edict_t *self)
 	}
 
 	self->think = turret_driver_link;
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 
 	gi.linkentity (self);
 }

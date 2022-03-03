@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // g_weapon.c
 
 #include "g_local.h"
@@ -94,7 +112,7 @@ void PlayerNoise(edict_t *who, vec3_t where, int type)
 	VectorCopy (where, noise->s.origin);
 	VectorSubtract (where, noise->maxs, noise->absmin);
 	VectorAdd (where, noise->maxs, noise->absmax);
-	noise->teleport_time = level.time;
+	noise->last_sound_framenum = level.framenum;
 	gi.linkentity (noise);
 }
 
@@ -217,12 +235,12 @@ void ChangeWeapon (edict_t *ent)
 {
 	char *mdl;
 
-	if (ent->client->grenade_time)
+	if (ent->client->grenade_framenum)
 	{
-		ent->client->grenade_time = level.time;
+		ent->client->grenade_framenum = level.framenum;
 		ent->client->weapon_sound = 0;
 		weapon_grenade_fire (ent, false);
-		ent->client->grenade_time = 0;
+		ent->client->grenade_framenum = 0;
 	}
 
 	ent->client->pers.lastweapon = ent->client->pers.weapon;
@@ -630,10 +648,10 @@ void Weapon_Generic2 (edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST
 			}
 			else
 			{
-				if (level.time >= ent->pain_debounce_time)
+				if (level.framenum >= ent->pain_debounce_framenum)
 				{
 					gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-					ent->pain_debounce_time = level.time + 1;
+					ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 				}
 /*if(ent->client->pers.weapon) gi.bprintf(PRINT_HIGH,"weapon %s %i\n"
 	,ent->client->pers.weapon->pickup_name
@@ -728,7 +746,7 @@ GRENADE
 ======================================================================
 */
 
-#define GRENADE_TIMER		3.0
+#define GRENADE_TIMER		3.0f
 #define GRENADE_MINSPEED	400
 #define GRENADE_MAXSPEED	800
 
@@ -750,7 +768,7 @@ void weapon_grenade_fire (edict_t *ent, qboolean held)
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
 
-	timer = ent->client->grenade_time - level.time;
+	timer = (ent->client->grenade_framenum - level.framenum) * FRAMETIME;
 	speed = GRENADE_MINSPEED + (GRENADE_TIMER - timer) * ((GRENADE_MAXSPEED - GRENADE_MINSPEED) / GRENADE_TIMER);
 	fire_grenade2 (ent, start, forward, damage, speed, timer, radius, held);
 
@@ -773,7 +791,7 @@ void weapon_grenade_fire (edict_t *ent, qboolean held)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
 
-	ent->client->grenade_time = level.time + 1.0;
+	ent->client->grenade_framenum = level.framenum + 1.0f * BASE_FRAMERATE;
 
 	if(ent->deadflag || ent->s.modelindex != 255) // VWep animations screw up corpses
 	{
@@ -821,14 +839,14 @@ void Weapon_Grenade (edict_t *ent)
 			{
 				ent->client->ps.gunframe = 1;
 				ent->client->weaponstate = WEAPON_FIRING;
-				ent->client->grenade_time = 0;
+				ent->client->grenade_framenum = 0;
 			}
 			else
 			{
-				if (level.time >= ent->pain_debounce_time)
+				if (level.framenum >= ent->pain_debounce_framenum)
 				{
 					gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-					ent->pain_debounce_time = level.time + 1;
+					ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 				}
 				NoAmmoWeaponChange (ent);
 			}
@@ -853,14 +871,14 @@ void Weapon_Grenade (edict_t *ent)
 
 		if (ent->client->ps.gunframe == 11)
 		{
-			if (!ent->client->grenade_time)
+			if (!ent->client->grenade_framenum)
 			{
-				ent->client->grenade_time = level.time + GRENADE_TIMER + 0.2;
+				ent->client->grenade_framenum = level.framenum + (GRENADE_TIMER + 0.2f) * BASE_FRAMERATE;
 				ent->client->weapon_sound = gi.soundindex("weapons/hgrenc1b.wav");
 			}
 
 			// they waited too long, detonate it in their hand
-			if (!ent->client->grenade_blew_up && level.time >= ent->client->grenade_time)
+			if (!ent->client->grenade_blew_up && level.framenum >= ent->client->grenade_framenum)
 			{
 				ent->client->weapon_sound = 0;
 				weapon_grenade_fire (ent, true);
@@ -872,7 +890,7 @@ void Weapon_Grenade (edict_t *ent)
 
 			if (ent->client->grenade_blew_up)
 			{
-				if (level.time >= ent->client->grenade_time)
+				if (level.framenum >= ent->client->grenade_framenum)
 				{
 					ent->client->ps.gunframe = 15;
 					ent->client->grenade_blew_up = false;
@@ -890,14 +908,14 @@ void Weapon_Grenade (edict_t *ent)
 			weapon_grenade_fire (ent, false);
 		}
 
-		if ((ent->client->ps.gunframe == 15) && (level.time < ent->client->grenade_time))
+		if ((ent->client->ps.gunframe == 15) && (level.framenum < ent->client->grenade_framenum))
 			return;
 
 		ent->client->ps.gunframe++;
 
 		if (ent->client->ps.gunframe == 16)
 		{
-			ent->client->grenade_time = 0;
+			ent->client->grenade_framenum = 0;
 			ent->client->weaponstate = WEAPON_READY;
 		}
 	}
@@ -930,7 +948,7 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 	VectorScale (forward, -2, ent->client->kick_origin);
 	ent->client->kick_angles[0] = -1;
 
-	fire_grenade (ent, start, forward, damage, 600, 2.5, radius);
+	fire_grenade (ent, start, forward, damage, 600, 2.5f, radius);
 
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
@@ -975,7 +993,7 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 	float	damage_radius;
 	int		radius_damage;
 
-	damage = 100 + (int)(random() * 20.0);
+	damage = 100 + (int)(random() * 20.0f);
 	radius_damage = 120;
 	damage_radius = 120;
 	if (is_quad)
@@ -994,7 +1012,7 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 	if(ent->client->zc.aiming != 4) fire_rocket (ent, start, forward, damage, 650, damage_radius, radius_damage);
 	else 
 	{
-		damage -= 20;//ロックオンは20ダメージ減り
+		damage -= 20; // lock-on reduces 20 damage
 		fire_lockon_rocket (ent, start, forward, damage, 20, damage_radius, radius_damage);
 	}
 
@@ -1011,11 +1029,11 @@ void Weapon_RocketLauncher_Fire (edict_t *ent)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
 
-//	ent->client->ps.fov = 90;					//ズーム解除
-	ent->client->zc.aiming = 0;					//ズーム不可
+//	ent->client->ps.fov = 90; // unzoom
+	ent->client->zc.aiming = 0; // cannot zoom
 }
 
-//ロックオンロケットランチャー
+// lock-on rocket launcher
 void Weapon_LockonRocketLauncher_Fire (edict_t *ent)
 {
 	vec3_t	tmp,out,aim,min,max;
@@ -1024,13 +1042,13 @@ void Weapon_LockonRocketLauncher_Fire (edict_t *ent)
 
 	if (ent->client->buttons & BUTTON_ATTACK)
 	{
-		ent->client->zc.lockon = false;		//スナイパーにロックオン機能なし
+		ent->client->zc.lockon = false; // no lock-on feature on sniper
 		if(ent->client->zc.aiming == 0)
 		{
 			gi.sound (ent, CHAN_WEAPON, gi.soundindex("weapons/sshotr1b.wav"), 1, ATTN_NONE, 0);
 			ent->client->zc.aiming = 3;
 			if(ent->client->zc.distance <10 || ent->client->zc.distance > 90) ent->client->zc.distance = 90;
-			ent->client->ps.fov = ent->client->zc.distance;//ズーム開始
+			ent->client->ps.fov = ent->client->zc.distance; // start zooming
 		}
 
 		VectorSet(max,8,8,8);
@@ -1065,7 +1083,7 @@ void Weapon_LockonRocketLauncher_Fire (edict_t *ent)
 						gi.sound (ent, CHAN_AUTO, gi.soundindex("3zb/locrloc.wav"), 1, ATTN_NORM, 0);
 					ent->client->zc.first_target = rs_trace.ent;
 				}
-				return;	//オートズーム反応せず
+				return; // does not respond to auto zoom
 			}
 			else ent->client->zc.first_target = NULL;
 		}
@@ -1082,7 +1100,7 @@ void Weapon_LockonRocketLauncher_Fire (edict_t *ent)
 //			else if(f < 800) ent->client->zc.distance = 45;
 			else if(f < 1300)
 			{
-				ent->client->zc.distance = 90 - (f - 200) / 14.6;//30;
+				ent->client->zc.distance = 90 - (f - 200) / 14.6f;//30;
 			}
 			else ent->client->zc.distance = 14;
 	
@@ -1107,7 +1125,7 @@ void Weapon_RocketLauncher (edict_t *ent)
 	static int	pause_frames[]	= {25, 33, 42, 50, 0};
 	static int	fire_frames[]	= {5, 0};
 
-	if(!(ent->client->buttons & BUTTON_ATTACK)) ent->client->zc.aiming = 0;	//アクティベート0
+	if(!(ent->client->buttons & BUTTON_ATTACK)) ent->client->zc.aiming = 0; // activate 0
 
 	if(0/*1*/)
 	{
@@ -1215,10 +1233,10 @@ void Weapon_HyperBlaster_Fire (edict_t *ent)
 	{
 		if (! ent->client->pers.inventory[ent->client->ammo_index] )
 		{
-			if (level.time >= ent->pain_debounce_time)
+			if (level.framenum >= ent->pain_debounce_framenum)
 			{
 				gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-				ent->pain_debounce_time = level.time + 1;
+				ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 			}
 			NoAmmoWeaponChange (ent);
 		}
@@ -1317,10 +1335,10 @@ void Machinegun_Fire (edict_t *ent)
 	if (ent->client->pers.inventory[ent->client->ammo_index] < 1)
 	{
 		ent->client->ps.gunframe = 6;
-		if (level.time >= ent->pain_debounce_time)
+		if (level.framenum >= ent->pain_debounce_framenum)
 		{
 			gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-			ent->pain_debounce_time = level.time + 1;
+			ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 		}
 		NoAmmoWeaponChange (ent);
 		return;
@@ -1334,11 +1352,11 @@ void Machinegun_Fire (edict_t *ent)
 
 	for (i=1 ; i<3 ; i++)
 	{
-		ent->client->kick_origin[i] = crandom() * 0.35;
-		ent->client->kick_angles[i] = crandom() * 0.7;
+		ent->client->kick_origin[i] = crandom() * 0.35f;
+		ent->client->kick_angles[i] = crandom() * 0.7f;
 	}
-	ent->client->kick_origin[0] = crandom() * 0.35;
-	ent->client->kick_angles[0] = ent->client->machinegun_shots * -1.5;
+	ent->client->kick_origin[0] = crandom() * 0.35f;
+	ent->client->kick_angles[0] = ent->client->machinegun_shots * -1.5f;
 
 	// raise the gun as it is firing
 	if (!deathmatch->value)
@@ -1368,12 +1386,12 @@ void Machinegun_Fire (edict_t *ent)
 	ent->client->anim_priority = ANIM_ATTACK;
 	if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
 	{
-		ent->s.frame = FRAME_crattak1 - (int) (random()+0.25);
+		ent->s.frame = FRAME_crattak1 - (int) (random()+0.25f);
 		ent->client->anim_end = FRAME_crattak9;
 	}
 	else
 	{
-		ent->s.frame = FRAME_attack1 - (int) (random()+0.25);
+		ent->s.frame = FRAME_attack1 - (int) (random()+0.25f);
 		ent->client->anim_end = FRAME_attack8;
 	}
 ent->client->weaponstate = WEAPON_READY;
@@ -1453,10 +1471,10 @@ void Chaingun_Fire (edict_t *ent)
 
 	if (!shots)
 	{
-		if (level.time >= ent->pain_debounce_time)
+		if (level.framenum >= ent->pain_debounce_framenum)
 		{
 			gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-			ent->pain_debounce_time = level.time + 1;
+			ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 		}
 		NoAmmoWeaponChange (ent);
 		return;
@@ -1470,8 +1488,8 @@ void Chaingun_Fire (edict_t *ent)
 
 	for (i=0 ; i<3 ; i++)
 	{
-		ent->client->kick_origin[i] = crandom() * 0.35;
-		ent->client->kick_angles[i] = crandom() * 0.7;
+		ent->client->kick_origin[i] = crandom() * 0.35f;
+		ent->client->kick_angles[i] = crandom() * 0.7f;
 	}
 
 	for (i=0 ; i<shots ; i++)
@@ -1579,10 +1597,10 @@ void Gatringgun_Fire (edict_t *ent)
 
 	if (!shots)
 	{
-		if (level.time >= ent->pain_debounce_time)
+		if (level.framenum >= ent->pain_debounce_framenum)
 		{
 			gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-			ent->pain_debounce_time = level.time + 1;
+			ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 		}
 		NoAmmoWeaponChange (ent);
 		return;
@@ -1596,8 +1614,8 @@ void Gatringgun_Fire (edict_t *ent)
 
 	for (i=0 ; i<3 ; i++)
 	{
-		ent->client->kick_origin[i] = crandom() * 0.35;
-		ent->client->kick_angles[i] = crandom() * 0.7;
+		ent->client->kick_origin[i] = crandom() * 0.35f;
+		ent->client->kick_angles[i] = crandom() * 0.7f;
 	}
 
 	for (i=0 ; i<shots ; i++)
@@ -1612,8 +1630,8 @@ void Gatringgun_Fire (edict_t *ent)
 		fire_bullet (ent, start, forward, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_CHAINGUN);
 	}
 
-	if(is_silenced) u = 0.5;
-	else u = 1.0;
+	if(is_silenced) u = 0.5f;
+	else u = 1.0f;
 
 	gi.sound (ent, CHAN_AUTO, gi.soundindex("3zb/gatgf.wav"), u, ATTN_NORM, 0);
 
@@ -1820,11 +1838,11 @@ void RSight_think(edict_t *ent)
 	VectorAdd(tmp,out,aim);
 	rs_trace = gi.trace (tmp, min, max, aim,ent->owner,  MASK_PLAYERSOLID);	
 	VectorCopy(rs_trace.endpos,ent->s.origin);
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 
 	if(rs_trace.ent != NULL)
 	{
-		if(Q_stricmp (rs_trace.ent->classname, "player") == 0) return;//オートズーム反応せず
+		if(Q_stricmp (rs_trace.ent->classname, "player") == 0) return; // does not respond to auto zoom
 	}
 
 	if(ent->owner->client->zc.autozoom )
@@ -1909,20 +1927,20 @@ void weapon_railgun_fire (edict_t *ent)
 	if (! ( (int)dmflags->value & DF_INFINITE_AMMO ) )
 		ent->client->pers.inventory[ent->client->ammo_index]--;
 
-//	ent->client->ps.fov = 90;					//ズーム解除
-	ent->client->zc.aiming = 0;					//ズーム不可
+//	ent->client->ps.fov = 90; // unzoom
+	ent->client->zc.aiming = 0; // cannot zoom
 }
-//スナイパー用railガン
+// rail gun for sniper
 void Weapon_SnipeRailgun (edict_t *ent)
 {
 	edict_t	*sight;
 
 	if (ent->client->buttons & BUTTON_ATTACK)
 	{
-		ent->client->zc.lockon = false;		//スナイパーにロックオン機能なし
+		ent->client->zc.lockon = false; // no lock-on feature on sniper
 		if( ent->client->zc.aiming == 0)
 		{
-			//サイトの作成
+			// creating a site
 			sight = G_Spawn();
 			VectorClear (sight->mins);
 			VectorClear (sight->maxs);
@@ -1933,7 +1951,7 @@ void Weapon_SnipeRailgun (edict_t *ent)
 			sight->s.effects = 0;
 			sight->s.renderfx = RF_SHELL_RED;
 			sight->think = RSight_think;
-			sight->nextthink = level.time + FRAMETIME;
+			sight->nextthink = level.framenum + 1;
 			sight->classname = "rail sight";		
 			if( ent->client->resp.ctf_team == CTF_TEAM2 && ctf->value)
 			{ 
@@ -1944,7 +1962,7 @@ void Weapon_SnipeRailgun (edict_t *ent)
 			gi.sound (ent, CHAN_WEAPON, gi.soundindex("weapons/sshotr1b.wav"), 1, ATTN_NONE, 0);
 			ent->client->zc.aiming = 1;
 			if(ent->client->zc.distance <10 || ent->client->zc.distance > 90) ent->client->zc.distance = 90;
-			ent->client->ps.fov = ent->client->zc.distance;//ズーム開始
+			ent->client->ps.fov = ent->client->zc.distance; // start zooming
 		}
 		return;
 	}
@@ -1959,7 +1977,7 @@ void Weapon_Railgun (edict_t *ent)
 	static int	pause_frames[]	= {56, 0};
 	static int	fire_frames[]	= {4, 0};
 
-	if(!(ent->client->buttons & BUTTON_ATTACK)) ent->client->zc.aiming = 0;	//アクティベート0
+	if(!(ent->client->buttons & BUTTON_ATTACK)) ent->client->zc.aiming = 0; // activate 0
 
 	if(0)
 	{
@@ -2145,7 +2163,7 @@ void weapon_phalanx_fire (edict_t *ent)
 	float		damage_radius;
 	int			radius_damage;
 
-	damage = 70 + (int)(random() * 10.0);
+	damage = 70 + (int)(random() * 10.0f);
 	radius_damage = 120;
 	damage_radius = 120;
 	
@@ -2166,7 +2184,7 @@ void weapon_phalanx_fire (edict_t *ent)
 	if (ent->client->ps.gunframe == 8)
 	{
 		v[PITCH] = ent->client->v_angle[PITCH];
-		v[YAW]   = ent->client->v_angle[YAW] - 1.5;
+		v[YAW]   = ent->client->v_angle[YAW] - 1.5f;
 		v[ROLL]  = ent->client->v_angle[ROLL];
 		AngleVectors (v, forward, right, up);
 		
@@ -2181,7 +2199,7 @@ void weapon_phalanx_fire (edict_t *ent)
 	else
 	{
 		v[PITCH] = ent->client->v_angle[PITCH];
-		v[YAW]   = ent->client->v_angle[YAW] + 1.5;
+		v[YAW]   = ent->client->v_angle[YAW] + 1.5f;
 		v[ROLL]  = ent->client->v_angle[ROLL];
 		AngleVectors (v, forward, right, up);
 		fire_plasma (ent, start, forward, damage, 725, damage_radius, radius_damage);
@@ -2219,7 +2237,7 @@ TRAP
 ======================================================================
 */
 
-#define TRAP_TIMER			5.0
+#define TRAP_TIMER			5.0f
 #define TRAP_MINSPEED		300
 #define TRAP_MAXSPEED		700
 
@@ -2241,7 +2259,7 @@ void weapon_trap_fire (edict_t *ent, qboolean held)
 	AngleVectors (ent->client->v_angle, forward, right, NULL);
 	P_ProjectSource (ent->client, ent->s.origin, offset, forward, right, start);
 
-	timer = ent->client->grenade_time - level.time;
+	timer = (ent->client->grenade_framenum - level.framenum) * FRAMETIME;
 	speed = GRENADE_MINSPEED + (GRENADE_TIMER - timer) * ((GRENADE_MAXSPEED - GRENADE_MINSPEED) / GRENADE_TIMER);
 	// fire_grenade2 (ent, start, forward, damage, speed, timer, radius, held);
 	fire_trap (ent, start, forward, damage, speed, timer, radius, held);
@@ -2251,7 +2269,7 @@ void weapon_trap_fire (edict_t *ent, qboolean held)
 
 	ent->client->pers.inventory[ent->client->ammo_index]--;
 
-	ent->client->grenade_time = level.time + 1.0;
+	ent->client->grenade_framenum = level.framenum + 1.0f * BASE_FRAMERATE;
 }
 
 void Weapon_Trap (edict_t *ent)
@@ -2278,14 +2296,14 @@ void Weapon_Trap (edict_t *ent)
 			{
 				ent->client->ps.gunframe = 1;
 				ent->client->weaponstate = WEAPON_FIRING;
-				ent->client->grenade_time = 0;
+				ent->client->grenade_framenum = 0;
 			}
 			else
 			{
-				if (level.time >= ent->pain_debounce_time)
+				if (level.framenum >= ent->pain_debounce_framenum)
 				{
 					gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
-					ent->pain_debounce_time = level.time + 1;
+					ent->pain_debounce_framenum = level.framenum + 1 * BASE_FRAMERATE;
 				}
 				NoAmmoWeaponChange (ent);
 			}
@@ -2313,16 +2331,16 @@ void Weapon_Trap (edict_t *ent)
 
 		if (ent->client->ps.gunframe == 11)
 		{
-			if (!ent->client->grenade_time)
+			if (!ent->client->grenade_framenum)
 			{
-				ent->client->grenade_time = level.time + GRENADE_TIMER + 0.2;
+				ent->client->grenade_framenum = level.framenum + (GRENADE_TIMER + 0.2f) * BASE_FRAMERATE;
 				// RAFAEL 16-APR-98
 				ent->client->weapon_sound = gi.soundindex("weapons/traploop.wav");
 				// END 16-APR-98
 			}
 
 			// they waited too long, detonate it in their hand
-			if (!ent->client->grenade_blew_up && level.time >= ent->client->grenade_time)
+			if (!ent->client->grenade_blew_up && level.framenum >= ent->client->grenade_framenum)
 			{
 				ent->client->weapon_sound = 0;
 				weapon_trap_fire (ent, true);
@@ -2334,7 +2352,7 @@ void Weapon_Trap (edict_t *ent)
 
 			if (ent->client->grenade_blew_up)
 			{
-				if (level.time >= ent->client->grenade_time)
+				if (level.framenum >= ent->client->grenade_framenum)
 				{
 					ent->client->ps.gunframe = 15;
 					ent->client->grenade_blew_up = false;
@@ -2354,14 +2372,14 @@ void Weapon_Trap (edict_t *ent)
 				NoAmmoWeaponChange (ent);
 		}
 
-		if ((ent->client->ps.gunframe == 15) && (level.time < ent->client->grenade_time))
+		if ((ent->client->ps.gunframe == 15) && (level.framenum < ent->client->grenade_framenum))
 			return;
 
 		ent->client->ps.gunframe++;
 
 		if (ent->client->ps.gunframe == 16)
 		{
-			ent->client->grenade_time = 0;
+			ent->client->grenade_framenum = 0;
 			ent->client->weaponstate = WEAPON_READY;
 		}
 	}

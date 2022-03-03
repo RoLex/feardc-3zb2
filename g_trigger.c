@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 
 
@@ -33,13 +51,13 @@ void multi_trigger (edict_t *ent)
 	if (ent->wait > 0)	
 	{
 		ent->think = multi_wait;
-		ent->nextthink = level.time + ent->wait;
+		ent->nextthink = level.framenum + ent->wait * BASE_FRAMERATE;
 	}
 	else
 	{	// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
 		ent->touch = NULL;
-		ent->nextthink = level.time + FRAMETIME;
+		ent->nextthink = level.framenum + 1;
 		ent->think = G_FreeEdict;
 	}
 }
@@ -106,7 +124,7 @@ void SP_trigger_multiple (edict_t *ent)
 		ent->noise_index = gi.soundindex ("misc/trigger1.wav");
 	
 	if (!ent->wait)
-		ent->wait = 0.2;
+		ent->wait = 0.2f;
 	ent->touch = Touch_Multi;
 	ent->movetype = MOVETYPE_NONE;
 	ent->svflags |= SVF_NOCLIENT;
@@ -154,7 +172,7 @@ void SP_trigger_once(edict_t *ent)
 	{
 		vec3_t	v;
 
-		VectorMA (ent->mins, 0.5, ent->size, v);
+		VectorMA (ent->mins, 0.5f, ent->size, v);
 		ent->spawnflags &= ~1;
 		ent->spawnflags |= 4;
 		gi.dprintf("fixed TRIGGERED flag on %s at %s\n", ent->classname, vtos(v));
@@ -202,9 +220,9 @@ void trigger_key_use (edict_t *self, edict_t *other, edict_t *activator)
 	index = ITEM_INDEX(self->item);
 	if (!activator->client->pers.inventory[index])
 	{
-		if (level.time < self->touch_debounce_time)
+		if (level.framenum < self->touch_debounce_framenum)
 			return;
-		self->touch_debounce_time = level.time + 5.0;
+		self->touch_debounce_framenum = level.framenum + 5.0f * BASE_FRAMERATE;
 		if(!(activator->svflags & SVF_MONSTER))
 				gi.centerprintf (activator, "You need the %s", self->item->pickup_name);
 		gi.sound (activator, CHAN_AUTO, gi.soundindex ("misc/keytry.wav"), 1, ATTN_NORM, 0);
@@ -355,8 +373,8 @@ This trigger will always fire.  It is activated by the world.
 void SP_trigger_always (edict_t *ent)
 {
 	// we must have some delay to make sure our use targets are present
-	if (ent->delay < 0.2)
-		ent->delay = 0.2;
+	if (ent->delay < 0.2f)
+		ent->delay = 0.2f;
 	G_UseTargets(ent, ent);
 }
 
@@ -388,9 +406,9 @@ void trigger_push_touch (edict_t *self, edict_t *other, cplane_t *plane, csurfac
 		{
 			// don't take falling damage immediately from this
 			VectorCopy (other->velocity, other->client->oldvelocity);
-			if (other->fly_sound_debounce_time < level.time)
+			if (other->fly_sound_debounce_framenum < level.framenum)
 			{
-				other->fly_sound_debounce_time = level.time + 1.5;
+				other->fly_sound_debounce_framenum = level.framenum + 1.5f * BASE_FRAMERATE;
 				gi.sound (other, CHAN_AUTO, windsound, 1, ATTN_NORM, 0);
 			}
 		}
@@ -429,9 +447,9 @@ void trigger_push_touch (edict_t *self, edict_t *other, cplane_t *plane, csurfac
 		{
 			// don't take falling damage immediately from this
 			VectorCopy (other->velocity, other->client->oldvelocity);
-			if (other->fly_sound_debounce_time < level.time)
+			if (other->fly_sound_debounce_framenum < level.framenum)
 			{
-				other->fly_sound_debounce_time = level.time + 1.5;
+				other->fly_sound_debounce_framenum = level.framenum + 1.5f * BASE_FRAMERATE;
 				gi.sound (other, CHAN_AUTO, windsound, 1, ATTN_NORM, 0);
 			}
 		}
@@ -453,12 +471,12 @@ void trigger_effect (edict_t *self)
 	vec3_t	size;
 	int		i;
 	
-	VectorScale (self->size, 0.5, size);
+	VectorScale (self->size, 0.5f, size);
 	VectorAdd (self->absmin, size, origin);
 	
 	for (i=0; i<10; i++)
 	{
-		origin[2] += (self->speed * 0.01) * (i + random());
+		origin[2] += (self->speed * 0.01f) * (i + random());
 		gi.WriteByte (svc_temp_entity);
 		gi.WriteByte (TE_TUNNEL_SPARKS);
 		gi.WriteByte (1);
@@ -474,14 +492,14 @@ void trigger_push_inactive (edict_t *self)
 {
 	if (self->delay > level.time)
 	{
-		self->nextthink = level.time + 0.1;
+		self->nextthink = level.framenum + 1;
 	}
 	else
 	{
 		self->touch = trigger_push_touch;
 		self->think = trigger_push_active;
-		self->nextthink = level.time + 0.1;
-		self->delay = self->nextthink + self->wait;  
+		self->nextthink = level.framenum + 1;
+		self->delay = self->nextthink + self->wait; // todo: framenum
 	}
 }
 
@@ -489,15 +507,15 @@ void trigger_push_active (edict_t *self)
 {
 	if (self->delay > level.time)
 	{
-		self->nextthink = level.time + 0.1;
+		self->nextthink = level.framenum + 1;
 		trigger_effect (self);
 	}
 	else
 	{
 		self->touch = NULL;
 		self->think = trigger_push_inactive;
-		self->nextthink = level.time + 0.1;
-		self->delay = self->nextthink + self->wait;  
+		self->nextthink = level.framenum + 1;
+		self->delay = self->nextthink + self->wait; // todo: framenum
 	}
 }
 
@@ -513,15 +531,14 @@ void SP_trigger_push (edict_t *self)
 			self->wait = 10;
   
 		self->think = trigger_push_active;
-		self->nextthink = level.time + 0.1;
-		self->delay = self->nextthink + self->wait;
+		self->nextthink = level.framenum + 1;
+		self->delay = self->nextthink + self->wait; // todo: framenum
 	}
 
 	if (!self->speed)
 		self->speed = 1000;
-	
-	gi.linkentity (self);
 
+	gi.linkentity (self);
 }
 
 /*
@@ -564,13 +581,13 @@ void hurt_touch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 	if (!other->takedamage)
 		return;
 
-	if (self->timestamp > level.time)
+	if (self->timestamp > level.framenum)
 		return;
 
 	if (self->spawnflags & 16)
-		self->timestamp = level.time + 1;
+		self->timestamp = level.framenum + 1 * BASE_FRAMERATE;
 	else
-		self->timestamp = level.time + FRAMETIME;
+		self->timestamp = level.framenum + 1;
 
 	if (!(self->spawnflags & 4))
 	{
@@ -628,7 +645,7 @@ void trigger_gravity_touch (edict_t *self, edict_t *other, cplane_t *plane, csur
 
 void SP_trigger_gravity (edict_t *self)
 {
-	if (st.gravity == 0 )
+	if (st.gravity == 0 ) // todo: NULL
 	{
 		gi.dprintf("trigger_gravity without gravity set at %s\n", vtos(self->s.origin));
 		G_FreeEdict  (self);
@@ -689,4 +706,3 @@ void SP_trigger_monsterjump (edict_t *self)
 	self->touch = trigger_monsterjump_touch;
 	self->movedir[2] = st.height;
 }
-

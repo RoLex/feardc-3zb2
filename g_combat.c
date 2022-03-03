@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // g_combat.c
 
 #include "g_local.h"
@@ -19,9 +37,9 @@ qboolean CanDamage (edict_t *targ, edict_t *inflictor)
 	if (targ->movetype == MOVETYPE_PUSH)
 	{
 		VectorAdd (targ->absmin, targ->absmax, dest);
-		VectorScale (dest, 0.5, dest);
+		VectorScale (dest, 0.5f, dest);
 		trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-		if (trace.fraction == 1.0)
+		if (trace.fraction == 1.0f)
 			return true;
 		if (trace.ent == targ)
 			return true;
@@ -29,35 +47,35 @@ qboolean CanDamage (edict_t *targ, edict_t *inflictor)
 	}
 	
 	trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, MASK_SOLID);
-	if (trace.fraction == 1.0)
+	if (trace.fraction == 1.0f)
 		return true;
 
 	VectorCopy (targ->s.origin, dest);
-	dest[0] += 15.0;
-	dest[1] += 15.0;
+	dest[0] += 15.0f;
+	dest[1] += 15.0f;
 	trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-	if (trace.fraction == 1.0)
+	if (trace.fraction == 1.0f)
 		return true;
 
 	VectorCopy (targ->s.origin, dest);
-	dest[0] += 15.0;
-	dest[1] -= 15.0;
+	dest[0] += 15.0f;
+	dest[1] -= 15.0f;
 	trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-	if (trace.fraction == 1.0)
+	if (trace.fraction == 1.0f)
 		return true;
 
 	VectorCopy (targ->s.origin, dest);
-	dest[0] -= 15.0;
-	dest[1] += 15.0;
+	dest[0] -= 15.0f;
+	dest[1] += 15.0f;
 	trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-	if (trace.fraction == 1.0)
+	if (trace.fraction == 1.0f)
 		return true;
 
 	VectorCopy (targ->s.origin, dest);
-	dest[0] -= 15.0;
-	dest[1] -= 15.0;
+	dest[0] -= 15.0f;
+	dest[1] -= 15.0f;
 	trace = gi.trace (inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-	if (trace.fraction == 1.0)
+	if (trace.fraction == 1.0f)
 		return true;
 
 
@@ -168,6 +186,8 @@ static int CheckPowerArmor (edict_t *ent, vec3_t point, vec3_t normal, int damag
 	if (dflags & DAMAGE_NO_ARMOR)
 		return 0;
 
+	index = 0;  // shut up gcc
+
 	if (client)
 	{
 		power_armor_type = PowerArmorType (ent);
@@ -201,7 +221,7 @@ static int CheckPowerArmor (edict_t *ent, vec3_t point, vec3_t normal, int damag
 		VectorSubtract (point, ent->s.origin, vec);
 		VectorNormalize (vec);
 		dot = DotProduct (vec, forward);
-		if (dot <= 0.3)
+		if (dot <= 0.3f)
 			return 0;
 
 		damagePerCell = 1;
@@ -222,7 +242,7 @@ static int CheckPowerArmor (edict_t *ent, vec3_t point, vec3_t normal, int damag
 		save = damage;
 
 	SpawnDamage (pa_te_type, point, normal, save);
-	ent->powerarmor_time = level.time + 0.2;
+	ent->powerarmor_framenum = level.framenum + 0.2f * BASE_FRAMERATE;
 
 	power_used = save / damagePerCell;
 
@@ -335,7 +355,7 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	// easy mode takes half damage
 	if (skill->value == 0 && deathmatch->value == 0 && targ->client)
 	{
-		damage *= 0.5;
+		damage *= 0.5f;
 		if (!damage)
 			damage = 1;
 	}
@@ -375,9 +395,9 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 				mass = targ->mass;
 
 			if (targ->client  && attacker == targ)
-				VectorScale (dir, 1600.0 * (float)knockback / mass, kvel);	// the rocket jump hack...
+				VectorScale (dir, 1600.0f * (float)knockback / mass, kvel);	// the rocket jump hack...
 			else
-				VectorScale (dir, 500.0 * (float)knockback / mass, kvel);
+				VectorScale (dir, 500.0f * (float)knockback / mass, kvel);
 
 			VectorAdd (targ->velocity, kvel, targ->velocity);
 		}
@@ -397,11 +417,11 @@ void T_Damage (edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir,
 	// check for invincibility
 	if ((client && client->invincible_framenum > level.framenum ) && !(dflags & DAMAGE_NO_PROTECTION))
 	{
-		if (targ->pain_debounce_time < level.time)
+		if (targ->pain_debounce_framenum < level.framenum)
 		{
 			gi.sound(targ, CHAN_ITEM, gi.soundindex("items/protect3.wav"), 1, ATTN_NORM, 0);
 //			gi.sound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
-			targ->pain_debounce_time = level.time + 2;
+			targ->pain_debounce_framenum = level.framenum + 2 * BASE_FRAMERATE;
 		}
 		take = 0;
 		save = damage;
@@ -525,11 +545,11 @@ void T_RadiusDamage (edict_t *inflictor, edict_t *attacker, float damage, edict_
 			continue;
 
 		VectorAdd (ent->mins, ent->maxs, v);
-		VectorMA (ent->s.origin, 0.5, v, v);
+		VectorMA (ent->s.origin, 0.5f, v, v);
 		VectorSubtract (inflictor->s.origin, v, v);
-		points = damage - 0.5 * VectorLength (v);
+		points = damage - 0.5f * VectorLength (v);
 		if (ent == attacker)
-			points = points * 0.5;
+			points = points * 0.5f;
 		if (points > 0)
 		{
 			if (CanDamage (ent, inflictor))

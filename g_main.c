@@ -1,3 +1,20 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
 #include "g_local.h"
 #include "bot.h"
@@ -51,6 +68,12 @@ cvar_t	*bob_roll;
 
 cvar_t	*sv_cheats;
 
+/*
+cvar_t  *flood_msgs; // todo
+cvar_t  *flood_persecond;
+cvar_t  *flood_waitdelay;
+*/
+
 //ponpoko
 cvar_t	*gamepath;
 cvar_t	*chedit;
@@ -78,20 +101,12 @@ void ReadLevel (char *filename);
 void InitGame (void);
 void G_RunFrame (void);
 
-void SetBotFlag1(edict_t *ent);	//チーム1の旗
-void SetBotFlag2(edict_t *ent);  //チーム2の旗
+void SetBotFlag1(edict_t *ent); // team 1 flag
+void SetBotFlag2(edict_t *ent); // team 2 flag
 
 //===================================================================
 
 
-/*
-=================
-GetGameAPI
-
-Returns a pointer to the structure with all entry points
-and global variables
-=================
-*/
 void ShutdownGame (void)
 {
 	gi.dprintf ("==== ShutdownGame ====\n");
@@ -106,6 +121,14 @@ void ShutdownGame (void)
 
 //void Dummy (void) {};
 
+/*
+=================
+GetGameAPI
+
+Returns a pointer to the structure with all entry points
+and global variables
+=================
+*/
 game_export_t *GetGameAPI (game_import_t *import)
 {
 	gi = *import;
@@ -382,7 +405,7 @@ void CheckDMRules (void)
 	int			i;
 	gclient_t	*cl;
 
-	if (level.intermissiontime)
+	if (level.intermission_framenum)
 		return;
 
 	if (!deathmatch->value)
@@ -439,7 +462,7 @@ void ExitLevel (void)
 	gi.AddCommandString (command);
 	level.changemap = NULL;
 	level.exitintermission = 0;
-	level.intermissiontime = 0;
+	level.intermission_framenum = 0;
 	ClientEndServerFrames ();
 
 	// clear some things before going to next level
@@ -482,7 +505,7 @@ void G_RunFrame (void)
 	gitem_t	*item;
 
 	level.framenum++;
-	level.time = level.framenum*FRAMETIME;
+	level.time = level.framenum * FRAMETIME;
 
 	// choose a client for monsters to target this frame
 //	AI_SetSightClient ();
@@ -498,17 +521,17 @@ void G_RunFrame (void)
 //
 // Bot Spawning
 //
-	if(SpawnWaitingBots && !level.intermissiontime)
+	if(SpawnWaitingBots && !level.intermission_framenum)
 	{
-		if(spawncycle < level.time)
+		if(spawncycle < level.time) // todo: framenum
 		{
 			Bot_SpawnCall();
-			spawncycle = level.time + FRAMETIME * 10 + 0.01 * SpawnWaitingBots;
+			spawncycle = level.time + FRAMETIME * 10 + 0.01f * SpawnWaitingBots; // todo: framenum
 		}
 	}
 	else
 	{
-		if(spawncycle < level.time) spawncycle = level.time + FRAMETIME * 10;
+		if(spawncycle < level.time) spawncycle = level.time + FRAMETIME * 10; // todo: framenum
 	}
 	//
 	// treat each object in turn
@@ -538,17 +561,17 @@ void G_RunFrame (void)
 		//ctf job assign
 		if(ctf->value)
 		{
-			if(ctfjob_update < level.time)
+			if(ctfjob_update < level.time) // todo: framenum
 			{
 //gi.bprintf(PRINT_HIGH,"Assigned!!!\n");
 				CTFJobAssign();
-				ctfjob_update = level.time + FRAMETIME * 2; 
+				ctfjob_update = level.time + FRAMETIME * 2; // todo: framenum
 			}
 		}
-//////////旗のスコアチェック
+// flag score check
 		if(zigmode->value == 1)
 		{
-			if(next_fragadd < level.time)
+			if(next_fragadd < level.time) // todo: framenum
 			{
 				if(i > 0 && i <= maxclients->value && g_edicts[i].client)
 				{
@@ -561,7 +584,7 @@ void G_RunFrame (void)
 													g_edicts[i].client->resp.score += 1;
 						else
 						{
-							//旗を持ってるとフラッグを足す
+							// if you have a flag, add a flag
 							for ( j = 1 ; j <= maxclients->value ; j++)
 							{
 								if(g_edicts[j].inuse)
@@ -598,7 +621,7 @@ void G_RunFrame (void)
 		G_RunEntity (ent);
 	}
 
-	if(next_fragadd < level.time)
+	if(next_fragadd < level.time) // todo: framenum
 	{
 		if(zflag_ent == NULL && !haveflag && !ctf->value 
 			&& zigmode->value == 1 && zigflag_spawn == 2)
@@ -611,7 +634,7 @@ void G_RunFrame (void)
 			}
 		}
 
-		next_fragadd = level.time + FRAMETIME * 100;
+		next_fragadd = level.time + FRAMETIME * 100; // todo: framenum
 	}
 
 	// see if it is time to end a deathmatch
@@ -623,4 +646,3 @@ void G_RunFrame (void)
 	// build the playerstate_t structures for all players
 	ClientEndServerFrames ();
 }
-

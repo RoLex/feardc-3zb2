@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // m_move.c -- monster movement
 
 #include "g_local.h"
@@ -49,12 +67,12 @@ realcheck:
 	start[2] = mins[2];
 	
 // the midpoint must be within 16 of the bottom
-	start[0] = stop[0] = (mins[0] + maxs[0])*0.5;
-	start[1] = stop[1] = (mins[1] + maxs[1])*0.5;
+	start[0] = stop[0] = (mins[0] + maxs[0])*0.5f;
+	start[1] = stop[1] = (mins[1] + maxs[1])*0.5f;
 	stop[2] = start[2] - 2*STEPSIZE;
 	trace = gi.trace (start, vec3_origin, vec3_origin, stop, ent,MASK_PLAYERSOLID /*MASK_MONSTERSOLID*/);
 
-	if (trace.fraction == 1.0)
+	if (trace.fraction == 1.0f)
 		return false;
 	mid = bottom = trace.endpos[2];
 	
@@ -67,14 +85,12 @@ realcheck:
 			
 			trace = gi.trace (start, vec3_origin, vec3_origin, stop, ent, MASK_PLAYERSOLID /*MASK_MONSTERSOLID*/);
 			
-			if (trace.fraction != 1.0 && trace.endpos[2] > bottom)
+			if (trace.fraction != 1.0f && trace.endpos[2] > bottom)
 				bottom = trace.endpos[2];
-			if (trace.fraction == 1.0 || mid - trace.endpos[2] > STEPSIZE)
+			if (trace.fraction == 1.0f || mid - trace.endpos[2] > STEPSIZE)
 				return false;
 		}
 
 	c_yes++;
 	return true;
 }
-
-

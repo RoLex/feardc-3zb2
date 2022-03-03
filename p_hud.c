@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 #include "bot.h"
 
@@ -31,7 +49,7 @@ void MoveClientToIntermission (edict_t *ent)
 	ent->client->breather_framenum = 0;
 	ent->client->enviro_framenum = 0;
 	ent->client->grenade_blew_up = false;
-	ent->client->grenade_time = 0;
+	ent->client->grenade_framenum = 0;
 
 	// RAFAEL
 	ent->client->quadfire_framenum = 0;
@@ -68,8 +86,8 @@ void BeginIntermission (edict_t *targ)
 	int		i;
 	edict_t	*ent, *client;
 
-	if (level.intermissiontime)
-		return;		// allready activated
+	if (level.intermission_framenum)
+		return;		// already activated
 
 //ZOID
 	if (deathmatch->value && ctf->value)
@@ -88,7 +106,7 @@ void BeginIntermission (edict_t *targ)
 //			respawn(client);
 //	}
 
-	level.intermissiontime = level.time;
+	level.intermission_framenum = level.framenum;
 	level.changemap = targ->map;
 
 	// if on same unit, return immediately
@@ -426,7 +444,7 @@ void G_SetStats (edict_t *ent)
 	//
 	// pickup message
 	//
-	if (level.time > ent->client->pickup_msg_time)
+	if (level.framenum > ent->client->pickup_msg_framenum)
 	{
 		ent->client->ps.stats[STAT_PICKUP_ICON] = 0;
 		ent->client->ps.stats[STAT_PICKUP_STRING] = 0;
@@ -486,7 +504,7 @@ void G_SetStats (edict_t *ent)
 
 	if (deathmatch->value)
 	{
-		if (ent->client->pers.health <= 0 || level.intermissiontime
+		if (ent->client->pers.health <= 0 || level.intermission_framenum
 			|| ent->client->showscores)
 			ent->client->ps.stats[STAT_LAYOUTS] |= 1;
 		if (ent->client->showinventory && ent->client->pers.health > 0)
@@ -571,7 +589,7 @@ void G_SetSpectatorStats (edict_t *ent)
 
 	// layouts are independant in spectator
 	cl->ps.stats[STAT_LAYOUTS] = 0;
-	if (cl->pers.health <= 0 || level.intermissiontime || cl->showscores)
+	if (cl->pers.health <= 0 || level.intermission_framenum || cl->showscores)
 		cl->ps.stats[STAT_LAYOUTS] |= 1;
 	if (cl->showinventory && cl->pers.health > 0)
 		cl->ps.stats[STAT_LAYOUTS] |= 2;
@@ -582,4 +600,3 @@ void G_SetSpectatorStats (edict_t *ent)
 	else
 		cl->ps.stats[STAT_CHASE] = 0;
 }
-

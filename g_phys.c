@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // g_phys.c
 
 #include "g_local.h"
@@ -30,8 +48,15 @@ SV_TestEntityPosition
 edict_t	*SV_TestEntityPosition (edict_t *ent)
 {
 	trace_t	trace;
+    int     mask;
 
-	trace = gi.trace (ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, MASK_SOLID);
+	/*
+    if (ent->clipmask) // todo
+        mask = ent->clipmask;
+    else
+    */
+        mask = MASK_SOLID;
+	trace = gi.trace (ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, mask);
 	
 	if (trace.startsolid)
 		return g_edicts;
@@ -70,12 +95,12 @@ Runs thinking code for this frame if necessary
 */
 qboolean SV_RunThink (edict_t *ent)
 {
-	float	thinktime;
+	int		thinktime;
 
 	thinktime = ent->nextthink;
 	if (thinktime <= 0)
 		return true;
-	if (thinktime > level.time+0.001)
+	if (thinktime > level.framenum)
 		return true;
 	
 	ent->nextthink = 0;
@@ -116,7 +141,7 @@ Slide off of the impacting object
 returns the blocked flags (1 = floor, 2 = step / wall)
 ==================
 */
-#define	STOP_EPSILON	0.1
+#define	STOP_EPSILON	0.1f
 
 int ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 {
@@ -206,7 +231,7 @@ int SV_FlyMove (edict_t *ent, float time, int mask)
 
 		hit = trace.ent;
 
-		if (trace.plane.normal[2] > 0.7)
+		if (trace.plane.normal[2] > 0.7f)
 		{
 			blocked |= 1;		// floor
 			if ( hit->solid == SOLID_BSP)
@@ -363,7 +388,7 @@ retry:
 	VectorCopy (trace.endpos, ent->s.origin);
 	gi.linkentity (ent);
 
-	if (trace.fraction != 1.0)
+	if (trace.fraction != 1.0f)
 	{
 		SV_Impact (ent, &trace);
 
@@ -389,7 +414,7 @@ typedef struct
 	edict_t	*ent;
 	vec3_t	origin;
 	vec3_t	angles;
-	float	deltayaw;
+	int		deltayaw;
 } pushed_t;
 pushed_t	pushed[MAX_EDICTS], *pushed_p;
 
@@ -416,12 +441,12 @@ qboolean SV_Push (edict_t *pusher, vec3_t move, vec3_t amove)
 	for (i=0 ; i<3 ; i++)
 	{
 		float	temp;
-		temp = move[i]*8.0;
-		if (temp > 0.0)
-			temp += 0.5;
+		temp = move[i]*8.0f;
+		if (temp > 0.0f)
+			temp += 0.5f;
 		else
-			temp -= 0.5;
-		move[i] = 0.125 * (int)temp;
+			temp -= 0.5f;
+		move[i] = 0.125f * (int)temp;
 	}
 
 	// find the bounding box
@@ -596,6 +621,7 @@ void SV_Physics_Pusher (edict_t *ent)
 		}
 	}
 	if (pushed_p > &pushed[MAX_EDICTS])
+		//gi.error("pushed_p > &pushed[MAX_EDICTS], memory corrupted"); // todo
 		gi.error (ERR_FATAL, "pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
 	if (part)
@@ -604,7 +630,7 @@ void SV_Physics_Pusher (edict_t *ent)
 		for (mv = ent ; mv ; mv=mv->teamchain)
 		{
 			if (mv->nextthink > 0)
-				mv->nextthink += FRAMETIME;
+				mv->nextthink++;
 		}
 
 		// if the pusher has a "blocked" function, call it
@@ -748,10 +774,10 @@ void SV_Physics_Toss (edict_t *ent)
 	{
 		// RAFAEL
 		if (ent->movetype == MOVETYPE_WALLBOUNCE)
-			backoff = 2.0;
+			backoff = 2.0f;
 		// RAFAEL ( else )		
 		else if (ent->movetype == MOVETYPE_BOUNCE)
-			backoff = 1.5;
+			backoff = 1.5f;
 		else
 			backoff = 1;
 
@@ -763,7 +789,7 @@ void SV_Physics_Toss (edict_t *ent)
 
 	// stop if on ground
 		// RAFAEL
-		if (trace.plane.normal[2] > 0.7 && ent->movetype != MOVETYPE_WALLBOUNCE)
+		if (trace.plane.normal[2] > 0.7f && ent->movetype != MOVETYPE_WALLBOUNCE)
 		{					
 			if (ent->velocity[2] < 60 || ent->movetype != MOVETYPE_BOUNCE )
 			{
@@ -887,7 +913,7 @@ void SV_Physics_Step (edict_t *ent)
 		if (!(ent->flags & FL_FLY))
 			if (!((ent->flags & FL_SWIM) && (ent->waterlevel > 2)))
 			{
-				if (ent->velocity[2] < sv_gravity->value*-0.1)
+				if (ent->velocity[2] < sv_gravity->value*-0.1f)
 					hitsound = true;
 				if (ent->waterlevel == 0)
 					SV_AddGravity (ent);
@@ -897,7 +923,7 @@ void SV_Physics_Step (edict_t *ent)
 	if ((ent->flags & FL_FLY) && (ent->velocity[2] != 0))
 	{
 //gi.bprintf(PRINT_HIGH,"FLY!\n");
-		speed = fabs(ent->velocity[2]);
+		speed = fabsf(ent->velocity[2]);
 		control = speed < sv_stopspeed ? sv_stopspeed : speed;
 		friction = sv_friction/3;
 		newspeed = speed - (FRAMETIME * control * friction);
@@ -911,7 +937,7 @@ void SV_Physics_Step (edict_t *ent)
 	if ((ent->flags & FL_SWIM) && (ent->velocity[2] != 0))
 	{
 //gi.bprintf(PRINT_HIGH,"SWIM!\n");
-		speed = fabs(ent->velocity[2]);
+		speed = fabsf(ent->velocity[2]);
 		control = speed < sv_stopspeed ? sv_stopspeed : speed;
 		newspeed = speed - (FRAMETIME * control * sv_waterfriction * ent->waterlevel);
 		if (newspeed < 0)
@@ -927,10 +953,10 @@ void SV_Physics_Step (edict_t *ent)
 		// apply friction
 		// let dead monsters who aren't completely onground slide
 		if ((wasonground) || (ent->flags & (FL_SWIM|FL_FLY)))
-			if (!(ent->health <= 0.0 && !M_CheckBottom(ent)))
+			if (!(ent->health <= 0.0f && !M_CheckBottom(ent)))
 			{
 				vel = ent->velocity;
-				speed = sqrt(vel[0]*vel[0] +vel[1]*vel[1]);
+				speed = sqrtf(vel[0]*vel[0] +vel[1]*vel[1]);
 				if (speed)
 				{
 					friction = sv_friction;
@@ -978,14 +1004,14 @@ void SV_Physics_Step (edict_t *ent)
 					else if( speed < 60 )
 					{
 						gi.sound (ent, 0, gi.soundindex("*fall2.wav"), 1, 1, 0);
-						ent->pain_debounce_time = level.time + FRAMETIME * 10;
+						ent->pain_debounce_framenum = level.framenum + 10;
 						T_Damage (ent, world, world, dir, ent->s.origin, ent->s.origin, (int)(random()*(15)), 0, 0, MOD_FALLING);
 //						gi.bprintf(PRINT_HIGH,"level 2\n");
 					}
 					else
 					{
 						gi.sound (ent, 0, gi.soundindex("*fall1.wav"), 1, 1, 0);
-						ent->pain_debounce_time = level.time + FRAMETIME * 10;
+						ent->pain_debounce_framenum = level.framenum + 10;
 						T_Damage (ent, world, world, dir, ent->s.origin, ent->s.origin, (int)(random() * (25)), 0, 0, MOD_FALLING);
 //						gi.bprintf(PRINT_HIGH,"level 3\n");
 					}
@@ -1007,7 +1033,6 @@ G_RunEntity
 */
 void G_RunEntity (edict_t *ent)
 {
-
 	if (ent->prethink)
 		ent->prethink (ent);
 

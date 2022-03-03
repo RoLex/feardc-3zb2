@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 // g_utils.c -- misc utility functions for game module
 
 #include "g_local.h"
@@ -72,7 +90,7 @@ edict_t *findradius (edict_t *from, vec3_t org, float rad)
 		if (from->solid == SOLID_NOT)
 			continue;
 		for (j=0 ; j<3 ; j++)
-			eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j])*0.5);
+			eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j])*0.5f);
 		if (VectorLength(eorg) > rad)
 			continue;
 		return from;
@@ -161,7 +179,7 @@ void G_UseTargets (edict_t *ent, edict_t *activator)
 	// create a temp object to fire at a later time
 		t = G_Spawn();
 		t->classname = "DelayedUse";
-		t->nextthink = level.time + ent->delay;
+		t->nextthink = level.framenum + ent->delay * BASE_FRAMERATE;
 		t->think = Think_Delay;
 		t->activator = activator;
 		if (!activator)
@@ -370,7 +388,7 @@ void G_InitEdict (edict_t *e)
 {
 	e->inuse = true;
 	e->classname = "noclass";
-	e->gravity = 1.0;
+	e->gravity = 1.0f;
 	e->s.number = e - g_edicts;
 }
 
@@ -395,7 +413,7 @@ edict_t *G_Spawn (void)
 	{
 		// the first couple seconds of server time can involve a lot of
 		// freeing and allocating, so relax the replacement policy
-		if (!e->inuse && ( e->freetime < 2 || level.time - e->freetime > 0.5 ) )
+		if (!e->inuse && ( e->freetime < 2 || level.time - e->freetime > 0.5f ) )
 		{
 			G_InitEdict (e);
 			return e;

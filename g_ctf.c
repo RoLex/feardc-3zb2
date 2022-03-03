@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 #include "bot.h"
 
@@ -182,7 +200,7 @@ static edict_t *loc_findradius (edict_t *from, vec3_t org, float rad)
 			continue;
 #endif
 		for (j=0 ; j<3 ; j++)
-			eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j])*0.5);
+			eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j])*0.5f);
 		if (VectorLength(eorg) > rad)
 			continue;
 		return from;
@@ -229,7 +247,7 @@ static qboolean loc_CanSee (edict_t *targ, edict_t *inflictor)
 
 	for (i = 0; i < 8; i++) {
 		trace = gi.trace (viewpoint, vec3_origin, vec3_origin, targpoints[i], inflictor, MASK_SOLID);
-		if (trace.fraction == 1.0)
+		if (trace.fraction == 1.0f)
 			return true;
 	}
 
@@ -759,7 +777,7 @@ static void CTFDropFlagTouch(edict_t *ent, edict_t *other, cplane_t *plane, csur
 {
 	//owner (who dropped us) can't touch for two secs
 	if (other == ent->owner && 
-		ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT-2)
+		ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT-2) // todo: framenum
 		return;
 
 	Touch_Item (ent, other, plane, surf);
@@ -802,7 +820,7 @@ void CTFDeadDropFlag(edict_t *self)
 
 	if (dropped) {
 		dropped->think = CTFDropFlagThink;
-		dropped->nextthink = level.time + CTF_AUTO_FLAG_RETURN_TIMEOUT;
+		dropped->nextthink = level.framenum + CTF_AUTO_FLAG_RETURN_TIMEOUT * BASE_FRAMERATE;
 		dropped->touch = CTFDropFlagTouch;
 	}
 }
@@ -826,17 +844,17 @@ static void CTFFlagThink(edict_t *ent)
 {
 	if (ent->solid != SOLID_NOT)
 		ent->s.frame = 173 + (((ent->s.frame - 173) + 1) % 16);
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 }
 
 void droptofloor (edict_t *ent);
 void SpawnItem3 (edict_t *ent, gitem_t *item);
-//edict_t *GetBotFlag1();	//チーム1の旗
-//edict_t *GetBotFlag2();  //チーム2の旗 
+//edict_t *GetBotFlag1(); // team 1 flag
+//edict_t *GetBotFlag2(); // team 2 flag
 void ChainPodThink (edict_t *ent);
-qboolean ChkTFlg( void );//旗セットアップ済み？
-void SetBotFlag1(edict_t *ent);	//チーム1の旗
-void SetBotFlag2(edict_t *ent);  //チーム2の旗
+qboolean ChkTFlg( void ); // have you set up the flag?
+void SetBotFlag1(edict_t *ent); // team 1 flag
+void SetBotFlag2(edict_t *ent); // team 2 flag
 
 void CTFFlagSetup (edict_t *ent)
 {
@@ -873,7 +891,7 @@ void CTFFlagSetup (edict_t *ent)
 
 	gi.linkentity (ent);
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 	ent->think = CTFFlagThink;
 
 ////PON
@@ -971,7 +989,7 @@ static void CTFSetIDView(edict_t *ent)
 			best = who;
 		}
 	}
-	if (bd > 0.90)
+	if (bd > 0.90f)
 		ent->client->ps.stats[STAT_CTF_ID_VIEW] = 
 			CS_PLAYERSKINS + (best - g_edicts - 1);
 }
@@ -988,7 +1006,7 @@ void SetCTFStats(edict_t *ent)
 	ent->client->ps.stats[STAT_CTF_TEAM2_HEADER] = gi.imageindex ("ctfsb2");
 
 	// if during intermission, we must blink the team header of the winning team
-	if (level.intermissiontime && (level.framenum & 8)) { // blink 1/8th second
+	if (level.intermission_framenum && (level.framenum & 8)) { // blink 1/8th second
 		// note that ctfgame.total[12] is set when we go to intermission
 		if (ctfgame.team1 > ctfgame.team2)
 			ent->client->ps.stats[STAT_CTF_TEAM1_HEADER] = 0;
@@ -1185,16 +1203,16 @@ void CTFResetGrapple(edict_t *self)
 	}
 	
 	if (self->owner->client->ctf_grapple) {
-		float volume = 1.0;
+		float volume = 1.0f;
 		gclient_t *cl;
 
 		if (self->owner->client->silencer_shots)
-			volume = 0.2;
+			volume = 0.2f;
 
 		gi.sound (self->owner, CHAN_RELIABLE+CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), volume, ATTN_NORM, 0);
 		cl = self->owner->client;
 		cl->ctf_grapple = NULL;
-		cl->ctf_grapplereleasetime = level.time;
+		cl->ctf_grapplereleasetime = level.time; // todo: framenum
 		cl->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
 		cl->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
 		G_FreeEdict(self);
@@ -1204,7 +1222,7 @@ void CTFResetGrapple(edict_t *self)
 void CTFGrappleTouch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
 	short	i;
-	float volume = 1.0;
+	float volume = 1.0f;
 
 	if (other == self->owner)
 		return;
@@ -1258,7 +1276,7 @@ void CTFGrappleTouch (edict_t *self, edict_t *other, cplane_t *plane, csurface_t
 	self->solid = SOLID_NOT;
 
 	if (self->owner->client->silencer_shots)
-		volume = 0.2;
+		volume = 0.2f;
 
 	gi.sound (self->owner, CHAN_RELIABLE+CHAN_WEAPON, gi.soundindex("weapons/grapple/grpull.wav"), volume, ATTN_NORM, 0);
 	gi.sound (self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM, 0);
@@ -1380,7 +1398,7 @@ void CTFGrapplePull(edict_t *self)
 			return;
 		}
 		if (self->enemy->solid == SOLID_BBOX) {
-			VectorScale(self->enemy->size, 0.5, v);
+			VectorScale(self->enemy->size, 0.5f, v);
 			VectorAdd(v, self->enemy->s.origin, v);
 			VectorAdd(v, self->enemy->mins, self->s.origin);
 			gi.linkentity (self);
@@ -1388,10 +1406,10 @@ void CTFGrapplePull(edict_t *self)
 			VectorCopy(self->enemy->velocity, self->velocity);
 		if (self->enemy->takedamage &&
 			!CheckTeamDamage (self->enemy, self->owner)) {
-			float volume = 1.0;
+			float volume = 1.0f;
 
 			if (self->owner->client->silencer_shots)
-				volume = 0.2;
+				volume = 0.2f;
 
 			T_Damage (self->enemy, self, self->owner, self->velocity, self->s.origin, vec3_origin, 1, 1, 0, MOD_GRAPPLE);
 			gi.sound (self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhurt.wav"), volume, ATTN_NORM, 0);
@@ -1431,10 +1449,10 @@ void CTFGrapplePull(edict_t *self)
 
 		if (self->owner->client->ctf_grapplestate == CTF_GRAPPLE_STATE_PULL &&
 			vlen < 64) {
-			float volume = 1.0;
+			float volume = 1.0f;
 
 			if (self->owner->client->silencer_shots)
-				volume = 0.2;
+				volume = 0.2f;
 
 			self->owner->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
 			gi.sound (self->owner, CHAN_RELIABLE+CHAN_WEAPON, gi.soundindex("weapons/grapple/grhang.wav"), volume, ATTN_NORM, 0);
@@ -1470,7 +1488,7 @@ void CTFFireGrapple (edict_t *self, vec3_t start, vec3_t dir, int damage, int sp
 //	grapple->s.sound = gi.soundindex ("misc/lasfly.wav");
 	grapple->owner = self;
 	grapple->touch = CTFGrappleTouch;
-//	grapple->nextthink = level.time + FRAMETIME;
+//	grapple->nextthink = level.framenum + 1;
 //	grapple->think = CTFGrappleThink;
 	grapple->dmg = damage;
 	self->client->ctf_grapple = grapple;
@@ -1478,7 +1496,7 @@ void CTFFireGrapple (edict_t *self, vec3_t start, vec3_t dir, int damage, int sp
 	gi.linkentity (grapple);
 
 	tr = gi.trace (self->s.origin, NULL, NULL, grapple->s.origin, grapple, MASK_SHOT);
-	if (tr.fraction < 1.0)
+	if (tr.fraction < 1.0f)
 	{
 		VectorMA (grapple->s.origin, -10, dir, grapple->s.origin);
 		grapple->touch (grapple, tr.ent, NULL, NULL);
@@ -1505,7 +1523,7 @@ void CTFGrappleFire (edict_t *ent, vec3_t g_offset, int damage, int effect)
 	vec3_t	forward, right;
 	vec3_t	start;
 	vec3_t	offset;
-	float volume = 1.0;
+	float volume = 1.0f;
 
 	if (ent->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY)
 		return; // it's already out
@@ -1520,7 +1538,7 @@ void CTFGrappleFire (edict_t *ent, vec3_t g_offset, int damage, int effect)
 	ent->client->kick_angles[0] = -1;
 
 	if (ent->client->silencer_shots)
-		volume = 0.2;
+		volume = 0.2f;
 
 	gi.sound (ent, CHAN_RELIABLE+CHAN_WEAPON, gi.soundindex("weapons/grapple/grfire.wav"), volume, ATTN_NORM, 0);
 	CTFFireGrapple (ent, start, forward, damage, CTF_GRAPPLE_SPEED, effect);
@@ -1978,7 +1996,7 @@ qboolean CTFPickup_Tech (edict_t *ent, edict_t *other)
 	
 	// client only gets one tech
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
-	other->client->ctf_regentime = level.time;
+	other->client->ctf_regentime = level.time; // todo: framenum
 	return true;
 }
 
@@ -2004,7 +2022,7 @@ static void TechThink(edict_t *tech)
 		SpawnTech(tech->item, spot);
 		G_FreeEdict(tech);
 	} else {
-		tech->nextthink = level.time + CTF_TECH_TIMEOUT;
+		tech->nextthink = level.framenum + CTF_TECH_TIMEOUT * BASE_FRAMERATE;
 		tech->think = TechThink;
 	}
 }
@@ -2014,7 +2032,7 @@ void CTFDrop_Tech(edict_t *ent, gitem_t *item)
 	edict_t *tech;
 
 	tech = Drop_Item(ent, item);
-	tech->nextthink = level.time + CTF_TECH_TIMEOUT;
+	tech->nextthink = level.framenum + CTF_TECH_TIMEOUT * BASE_FRAMERATE;
 	tech->think = TechThink;
 	ent->client->pers.inventory[ITEM_INDEX(item)] = 0;
 }
@@ -2033,7 +2051,7 @@ void CTFDeadDropTech(edict_t *ent)
 			// hack the velocity to make it bounce random
 			dropped->velocity[0] = (rand() % 600) - 300;
 			dropped->velocity[1] = (rand() % 600) - 300;
-			dropped->nextthink = level.time + CTF_TECH_TIMEOUT;
+			dropped->nextthink = level.framenum + CTF_TECH_TIMEOUT * BASE_FRAMERATE;
 			dropped->think = TechThink;
 			dropped->owner = NULL;
 			ent->client->pers.inventory[ITEM_INDEX(tech)] = 0;
@@ -2076,7 +2094,7 @@ static void SpawnTech(gitem_t *item, edict_t *spot)
 	VectorScale (forward, 100, ent->velocity);
 	ent->velocity[2] = 300;
 
-	ent->nextthink = level.time + CTF_TECH_TIMEOUT;
+	ent->nextthink = level.framenum + CTF_TECH_TIMEOUT * BASE_FRAMERATE;
 	ent->think = TechThink;
 
 	gi.linkentity (ent);
@@ -2115,7 +2133,7 @@ void CTFSetupTechSpawn(void)
 		return;
 
 	ent = G_Spawn();
-	ent->nextthink = level.time + 2;
+	ent->nextthink = level.framenum + 2 * BASE_FRAMERATE;
 	ent->think = SpawnTechs;
 	techspawn = true;
 }
@@ -2123,10 +2141,10 @@ void CTFSetupTechSpawn(void)
 int CTFApplyResistance(edict_t *ent, int dmg)
 {
 	static gitem_t *tech = NULL;
-	float volume = 1.0;
+	float volume = 1.0f;
 
 	if (ent->client && ent->client->silencer_shots)
-		volume = 0.2;
+		volume = 0.2f;
 
 	if (!tech)
 		tech = FindItemByClassname("item_tech1");
@@ -2153,17 +2171,17 @@ int CTFApplyStrength(edict_t *ent, int dmg)
 qboolean CTFApplyStrengthSound(edict_t *ent)
 {
 	static gitem_t *tech = NULL;
-	float volume = 1.0;
+	float volume = 1.0f;
 
 	if (ent->client && ent->client->silencer_shots)
-		volume = 0.2;
+		volume = 0.2f;
 
 	if (!tech)
 		tech = FindItemByClassname("item_tech2");
 	if (tech && ent->client &&
 		ent->client->pers.inventory[ITEM_INDEX(tech)]) {
-		if (ent->client->ctf_techsndtime < level.time) {
-			ent->client->ctf_techsndtime = level.time + 1;
+		if (ent->client->ctf_techsndtime < level.time) { // todo: framenum
+			ent->client->ctf_techsndtime = level.time + 1; // todo: framenum
 			if (ent->client->quad_framenum > level.framenum)
 				gi.sound(ent, CHAN_VOICE, gi.soundindex("ctf/tech2x.wav"), volume, ATTN_NORM, 0);
 			else
@@ -2190,17 +2208,17 @@ qboolean CTFApplyHaste(edict_t *ent)
 void CTFApplyHasteSound(edict_t *ent)
 {
 	static gitem_t *tech = NULL;
-	float volume = 1.0;
+	float volume = 1.0f;
 
 	if (ent->client && ent->client->silencer_shots)
-		volume = 0.2;
+		volume = 0.2f;
 
 	if (!tech)
 		tech = FindItemByClassname("item_tech3");
 	if (tech && ent->client &&
 		ent->client->pers.inventory[ITEM_INDEX(tech)] &&
-		ent->client->ctf_techsndtime < level.time) {
-		ent->client->ctf_techsndtime = level.time + 1;
+		ent->client->ctf_techsndtime < level.time) { // todo: framenum
+		ent->client->ctf_techsndtime = level.time + 1; // todo: framenum
 		gi.sound(ent, CHAN_VOICE, gi.soundindex("ctf/tech3.wav"), volume, ATTN_NORM, 0);
 	}
 }
@@ -2211,25 +2229,25 @@ void CTFApplyRegeneration(edict_t *ent)
 	qboolean noise = false;
 	gclient_t *client;
 	int index;
-	float volume = 1.0;
+	float volume = 1.0f;
 
 	client = ent->client;
 	if (!client)
 		return;
 
 	if (ent->client->silencer_shots)
-		volume = 0.2;
+		volume = 0.2f;
 
 	if (!tech)
 		tech = FindItemByClassname("item_tech4");
 	if (tech && client->pers.inventory[ITEM_INDEX(tech)]) {
-		if (client->ctf_regentime < level.time) {
-			client->ctf_regentime = level.time;
+		if (client->ctf_regentime < level.time) { // todo: framenum
+			client->ctf_regentime = level.time; // todo: framenum
 			if (ent->health < 150) {
 				ent->health += 5;
 				if (ent->health > 150)
 					ent->health = 150;
-				client->ctf_regentime += 0.5;
+				client->ctf_regentime += 0.5f;
 				noise = true;
 			}
 			index = ArmorIndex (ent);
@@ -2237,12 +2255,12 @@ void CTFApplyRegeneration(edict_t *ent)
 				client->pers.inventory[index] += 5;
 				if (client->pers.inventory[index] > 150)
 					client->pers.inventory[index] = 150;
-				client->ctf_regentime += 0.5;
+				client->ctf_regentime += 0.5f;
 				noise = true;
 			}
 		}
-		if (noise && ent->client->ctf_techsndtime < level.time) {
-			ent->client->ctf_techsndtime = level.time + 1;
+		if (noise && ent->client->ctf_techsndtime < level.time) { // todo: framenum
+			ent->client->ctf_techsndtime = level.time + 1; // todo: framenum
 			gi.sound(ent, CHAN_VOICE, gi.soundindex("ctf/tech4.wav"), volume, ATTN_NORM, 0);
 		}
 	}
@@ -2599,7 +2617,7 @@ The banner is 248 tall.
 static void misc_ctf_banner_think (edict_t *ent)
 {
 	ent->s.frame = (ent->s.frame + 1) % 16;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 }
 
 void SP_misc_ctf_banner (edict_t *ent)
@@ -2614,7 +2632,7 @@ void SP_misc_ctf_banner (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_ctf_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 }
 
 /*QUAKED misc_ctf_small_banner (1 .5 0) (-4 -32 0) (4 32 124) TEAM2
@@ -2633,7 +2651,7 @@ void SP_misc_ctf_small_banner (edict_t *ent)
 	gi.linkentity (ent);
 
 	ent->think = misc_ctf_banner_think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 }
 
 
@@ -2998,9 +3016,9 @@ void CTFSetupNavSpawn()
 	unsigned int size;
 
 //PONKO
-	spawncycle = level.time + FRAMETIME * 100;
+	spawncycle = level.time + FRAMETIME * 100; // todo: framenum
 //PONKO
-	//ルート初期化
+	// route initialization
 	CurrentIndex = 0;
 	memset(Route,0,sizeof(Route));
 	memset(code,0,8);
@@ -3142,12 +3160,12 @@ void SpawnExtra(vec3_t position,char *classname)
 void CTFJobAssign (void)
 {
 	int			i;
-	int			defend1,defend2;		//ディフェンダー総数
-	int			mate1,mate2;		//チームメイト総数
+	int			defend1,defend2; // total number of defenders
+	int			mate1,mate2; // total number of teammates
 	gclient_t	*client;
 	edict_t		*e;
-	edict_t		*defei1,*defei2;		//候補
-	edict_t		*geti1,*geti2;		//候補
+	edict_t		*defei1,*defei2; // candidate
+	edict_t		*geti1,*geti2; // candidate
 
 	defend1 = 0;
 	defend2 = 0;
@@ -3177,10 +3195,10 @@ void CTFJobAssign (void)
 				if(1/*e->svflags & SVF_MONSTER*/)
 				{
 
-					if( client->zc.ctfstate == CTFS_OFFENCER && random()>0.7) defei1 = e;
+					if( client->zc.ctfstate == CTFS_OFFENCER && random()>0.7f) defei1 = e;
 					else if( client->zc.ctfstate == CTFS_DEFENDER)
 					{
-						if(random()>0.7) geti1 = e;
+						if(random()>0.7f) geti1 = e;
 						defend1++;
 					}
 					else if( client->zc.ctfstate == CTFS_CARRIER ) defend1++;
@@ -3195,10 +3213,10 @@ void CTFJobAssign (void)
 				}
 				if(1/*e->svflags & SVF_MONSTER*/)
 				{
-					if( client->zc.ctfstate == CTFS_OFFENCER && random()>0.8) defei2 = e;
+					if( client->zc.ctfstate == CTFS_OFFENCER && random()>0.8f) defei2 = e;
 					else if( client->zc.ctfstate == CTFS_DEFENDER)
 					{
-						if(random()>0.7) geti2 = e;
+						if(random()>0.7f) geti2 = e;
 						defend2++;
 					}
 					else if( client->zc.ctfstate == CTFS_CARRIER ) defend2++;

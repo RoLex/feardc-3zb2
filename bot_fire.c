@@ -1,11 +1,29 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "bot.h"
 #include "q_shared.h"
 #include "m_player.h"
 
 //======================================================================
-//aim決定
+//aim	decides
 //ent	entity
-//aim	aimスキル
+//aim	aim skill
 //yaw	dist
 //wep	weapon
 void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
@@ -18,7 +36,7 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 
 	switch(weapon)
 	{
-		//即判定
+		// i.e. to judge
 		case WEAP_SHOTGUN:
 		case WEAP_SUPERSHOTGUN:
 		case WEAP_RAILGUN:
@@ -47,11 +65,11 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 			ent->s.angles[YAW] = Get_yaw(targaim);
 			ent->s.angles[PITCH] = Get_pitch(targaim);
 
-			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_S * (random() - 0.5) *2;
+			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_S * (random() - 0.5f) *2;
 			if(ent->s.angles[YAW] > 180) ent->s.angles[YAW] -= 360;
 			else if(ent->s.angles[YAW] < -180) ent->s.angles[YAW] += 360;
 
-			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_S * (random() - 0.5) * 2);
+			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_S * (random() - 0.5f) * 2);
 			if(ent->s.angles[PITCH] > 90) ent->s.angles[PITCH] = 90;
 			else if(ent->s.angles[PITCH] < -90) ent->s.angles[PITCH] = -90;
 			break;
@@ -82,11 +100,11 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 			ent->s.angles[YAW] = Get_yaw(targaim);
 			ent->s.angles[PITCH] = Get_pitch(targaim);
 
-			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_M * (random() - 0.5) *2;
+			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_M * (random() - 0.5f) *2;
 			if(ent->s.angles[YAW] > 180) ent->s.angles[YAW] -= 360;
 			else if(ent->s.angles[YAW] < -180) ent->s.angles[YAW] += 360;
 
-			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_M * (random() - 0.5) * 2);
+			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_M * (random() - 0.5f) * 2);
 			if(ent->s.angles[PITCH] > 90) ent->s.angles[PITCH] = 90;
 			else if(ent->s.angles[PITCH] < -90) ent->s.angles[PITCH] = -90;
 			break;
@@ -133,7 +151,7 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 					VectorCopy(ent->s.origin,v);
 					v[2] += ent->viewheight - 8;
 					rs_trace = gi.trace(v,NULL,NULL,targaim,ent,MASK_SHOT);
-					if(rs_trace.fraction != 1.0) targaim[2] += 24;
+					if(rs_trace.fraction != 1.0f) targaim[2] += 24;
 				}
 				else if(targaim[2] > (ent->s.origin[2] + JumpMax)) targaim[2] += 5;
 			}
@@ -143,11 +161,11 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 			ent->s.angles[YAW] = Get_yaw(targaim);
 			ent->s.angles[PITCH] = Get_pitch(targaim);
 
-			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_M * (random() - 0.5) *2;
+			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_M * (random() - 0.5f) *2;
 			if(ent->s.angles[YAW] > 180) ent->s.angles[YAW] -= 360;
 			else if(ent->s.angles[YAW] < -180) ent->s.angles[YAW] += 360;
 
-			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_M * (random() - 0.5) * 2);
+			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_M * (random() - 0.5f) * 2);
 			if(ent->s.angles[PITCH] > 90) ent->s.angles[PITCH] = 90;
 			else if(ent->s.angles[PITCH] < -90) ent->s.angles[PITCH] = -90;
 			break;
@@ -183,11 +201,11 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 			ent->s.angles[YAW] = Get_yaw(targaim);
 			ent->s.angles[PITCH] = Get_pitch(targaim);
 
-			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_M * (random() - 0.5) *2;
+			ent->s.angles[YAW] += aim * AIMING_ANGLEGAP_M * (random() - 0.5f) *2;
 			if(ent->s.angles[YAW] > 180) ent->s.angles[YAW] -= 360;
 			else if(ent->s.angles[YAW] < -180) ent->s.angles[YAW] += 360;
 
-			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_M * (random() - 0.5) * 2);
+			ent->s.angles[PITCH] += (aim * AIMING_ANGLEGAP_M * (random() - 0.5f) * 2);
 			if(ent->s.angles[PITCH] > 90) ent->s.angles[PITCH] = 90;
 			else if(ent->s.angles[PITCH] < -90) ent->s.angles[PITCH] = -90;
 			break;
@@ -207,7 +225,7 @@ void Get_AimAngle(edict_t *ent,float aim,float dist,int weapon)
 
 
 //======================================================================
-//武器使用可能？
+// weapon use possible?
 int CanUsewep(edict_t *ent,int weapon)
 {
 	gitem_t *item;
@@ -480,18 +498,18 @@ qboolean B_UseBfg(edict_t *ent,edict_t *target,int enewep,float aim,float distan
 
 		if(FFlg[skill] & FIRE_STAYFIRE)
 		{
-			if(k /*&& random() < 0.8*/)
+			if(k /*&& random() < 0.8f*/)
 			{
 				client->buttons |= BUTTON_ATTACK;
-				zc->battlemode |= FIRE_STAYFIRE;			//モード遷移
+				zc->battlemode |= FIRE_STAYFIRE; // mode transition
 				zc->battlecount = 8 + (int)(10 * random());
 				trace_priority = TRP_ALLKEEP;
 				return true;
 			}
 		}
-		//爆発回避
+		// explosion avoidance
 		else if((FFlg[skill] & FIRE_EXPAVOID)
-		&& distance < 300 /*&& random() < 0.5 */
+		&& distance < 300 /*&& random() < 0.5f */
 		&& Bot_traceS(ent,target))
 		{
 			if(ent->groundentity || zc->waterstate)
@@ -502,10 +520,10 @@ qboolean B_UseBfg(edict_t *ent,edict_t *target,int enewep,float aim,float distan
 				return true;
 			}
 		}
-		//普通
+		// ordinary
 		else if(!(FFlg[skill] &(FIRE_STAYFIRE | FIRE_EXPAVOID)))
 		{
-			if(k /*&& random() < 0.8*/)
+			if(k /*&& random() < 0.8f*/)
 			{
 				zc->battlemode |= FIRE_BFG;
 				zc->battlecount = 6 + (int)(6 * random());
@@ -516,7 +534,7 @@ qboolean B_UseBfg(edict_t *ent,edict_t *target,int enewep,float aim,float distan
 		else if((FFlg[skill] & FIRE_EXPAVOID)
 			&& Bot_traceS(ent,target))
 		{
-			if(k /*&& random() < 0.8*/)
+			if(k /*&& random() < 0.8f*/)
 			{
 				zc->battlemode |= FIRE_BFG;
 				zc->battlecount = 6 + (int)(6 * random());
@@ -573,7 +591,7 @@ qboolean B_UsePhalanx(edict_t *ent,edict_t *target,int enewep,float aim,float di
 		Get_AimAngle(ent,aim,distance,mywep);
 		if(trace_priority < TRP_ANGLEKEEP) trace_priority = TRP_ANGLEKEEP;
 		if((FFlg[skill] & FIRE_PRESTAYFIRE)
-			&& ((distance > 500 && random() < 0.1) || fabs(ent->s.angles[PITCH]) > 45 ) 
+			&& ((distance > 500 && random() < 0.1f) || fabs(ent->s.angles[PITCH]) > 45 ) 
 			&& Bot_traceS(ent,target)
 			&& (enewep <= WEAP_MACHINEGUN || enewep == WEAP_GRENADES))
 		{
@@ -585,7 +603,7 @@ qboolean B_UsePhalanx(edict_t *ent,edict_t *target,int enewep,float aim,float di
 				return true;
 			}
 		}
-		if((FFlg[skill] & FIRE_JUMPROC) && random() < 0.3 
+		if((FFlg[skill] & FIRE_JUMPROC) && random() < 0.3f 
 			&& (target->s.origin[2] - ent->s.origin[2]) < JumpMax
 			&& !(client->ps.pmove.pm_flags && PMF_DUCKED)) 
 		{
@@ -614,7 +632,7 @@ qboolean B_UsePhalanx(edict_t *ent,edict_t *target,int enewep,float aim,float di
 			}
 		}
 		else if((FFlg[skill] & FIRE_EXPAVOID)
-		&& distance < 300 && random() < 0.5 
+		&& distance < 300 && random() < 0.5f 
 		&& Bot_traceS(ent,target))
 		{
 			if(ent->groundentity || zc->waterstate)
@@ -652,7 +670,7 @@ qboolean B_UseRocket(edict_t *ent,edict_t *target,int enewep,float aim,float dis
 		Get_AimAngle(ent,aim,distance,mywep);
 		if(trace_priority < TRP_ANGLEKEEP) trace_priority = TRP_ANGLEKEEP;
 		if((FFlg[skill] & FIRE_PRESTAYFIRE)
-			&& ((distance > 500 && random() < 0.1) || fabs(ent->s.angles[PITCH]) > 45 ) 
+			&& ((distance > 500 && random() < 0.1f) || fabs(ent->s.angles[PITCH]) > 45 ) // todo: fabsf
 			&& Bot_traceS(ent,target)
 			&& (enewep <= WEAP_MACHINEGUN || enewep == WEAP_GRENADES))
 		{
@@ -664,7 +682,7 @@ qboolean B_UseRocket(edict_t *ent,edict_t *target,int enewep,float aim,float dis
 				return true;
 			}
 		}
-		if((FFlg[skill] & FIRE_JUMPROC) && random() < 0.3 
+		if((FFlg[skill] & FIRE_JUMPROC) && random() < 0.3f 
 			&& (target->s.origin[2] - ent->s.origin[2]) < JumpMax
 			&& !(client->ps.pmove.pm_flags && PMF_DUCKED)) 
 		{
@@ -694,7 +712,7 @@ qboolean B_UseRocket(edict_t *ent,edict_t *target,int enewep,float aim,float dis
 			}
 		}
 		else if((FFlg[skill] & FIRE_EXPAVOID)
-		&& distance < 300 && random() < 0.5 
+		&& distance < 300 && random() < 0.5f 
 		&& Bot_traceS(ent,target))
 		{
 			if(ent->groundentity || zc->waterstate)
@@ -782,7 +800,7 @@ qboolean B_UseGrenadeLauncher(edict_t *ent,edict_t *target,int enewep,float aim,
 		mywep = Get_KindWeapon(client->pers.weapon);
 		Get_AimAngle(ent,aim,distance,mywep);
 		if((FFlg[skill] & FIRE_STAYFIRE)
-			&& random() < 0.3 && target->s.origin[2] < ent->s.origin[2])
+			&& random() < 0.3f && target->s.origin[2] < ent->s.origin[2])
 		{
 			if(ent->groundentity || zc->waterstate)
 			{
@@ -797,7 +815,7 @@ qboolean B_UseGrenadeLauncher(edict_t *ent,edict_t *target,int enewep,float aim,
 			}
 		}
 		else if((FFlg[skill] & FIRE_EXPAVOID)
-		&& distance < 300 && random() < 0.5 
+		&& distance < 300 && random() < 0.5f 
 		&& Bot_traceS(ent,target))
 		{
 			if(ent->groundentity || zc->waterstate)
@@ -1009,10 +1027,10 @@ void Combat_LevelX(edict_t *ent,int foundedenemy,int enewep
 	target = zc->first_target;
 
 	//-----------------------------------------------------------------------
-	//ステータスを反映
+	// reflect status
 	//-----------------------------------------------------------------------
 	k = false;
-	//予測========================
+	// predict ========================
 	if(zc->battlemode & FIRE_ESTIMATE)
 	{
 		mywep = Get_KindWeapon(client->pers.weapon);
@@ -1077,11 +1095,11 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 
 
 	//-----------------------------------------------------------------------
-	//ステータスを反映
+	// reflect status
 	//-----------------------------------------------------------------------
-	//チキンは狙いがキツイ==============
-	if(zc->battlemode == FIRE_CHIKEN) aim *= 0.7;
-	//左右に回避========================
+	// chicken is hard to aim ==============
+	if(zc->battlemode == FIRE_CHIKEN) aim *= 0.7f;
+	// avoid left and right ========================
 	if(zc->battlemode & FIRE_SHIFT)
 	{
 		mywep = Get_KindWeapon(client->pers.weapon);
@@ -1101,7 +1119,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 					zc->moveyaw = ent->s.angles[YAW] - 90;
 					if(zc->moveyaw < -180) zc->moveyaw += 360;
 				}
-				trace_priority = TRP_MOVEKEEP;	//後退処理
+				trace_priority = TRP_MOVEKEEP; // retreat processing
 			}
 		}
 		else
@@ -1127,7 +1145,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 
 		if(rs_trace.ent == ent)
 		{
-			if(rs_trace.endpos[2] > (ent->s.origin[2] + 4) && random() < 0.4)
+			if(rs_trace.endpos[2] > (ent->s.origin[2] + 4) && random() < 0.4f)
 			{
 				client->ps.pmove.pm_flags |= PMF_DUCKED;
 				zc->battleduckcnt = 2 + 8 * random();
@@ -1140,7 +1158,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				}
 				else
 				{
-					ent->moveinfo.speed = 0.5;
+					ent->moveinfo.speed = 0.5f;
 	
 					ent->velocity[2] += VEL_BOT_JUMP;
 					gi.sound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM, 0);
@@ -1150,7 +1168,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 			}
 		}
 	}
-	//無視して走る========================
+	// ignore and run ========================
 	if(zc->battlemode & FIRE_IGNORE)
 	{
 		if(--zc->battlecount > 0)
@@ -1164,7 +1182,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		zc->battlemode = 0;
 	}
 
-	//立ち止まって撃つ準備========================
+	// ready to stop and shoot ========================
 	if(zc->battlemode & FIRE_PRESTAYFIRE)
 	{
 		if(--zc->battlecount > 0)
@@ -1172,21 +1190,21 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 			mywep = Get_KindWeapon(client->pers.weapon);
 			Get_AimAngle(ent,aim,distance,mywep);
 			if(target->client->weaponstate == WEAPON_FIRING && ent->groundentity) ent->client->ps.pmove.pm_flags |= PMF_DUCKED;
-			trace_priority = TRP_ALLKEEP;	//動かない
+			trace_priority = TRP_ALLKEEP; // doesn't work
 			return;
 		}
-		if(!(zc->battlemode & FIRE_SHIFT)) zc->battlemode = FIRE_STAYFIRE;			//モード遷移
+		if(!(zc->battlemode & FIRE_SHIFT)) zc->battlemode = FIRE_STAYFIRE; // mode transition
 		zc->battlecount = 5 + (int)(20 * random());
 	}
 
-	//立ち止まって撃つ========================
+	// stop and shoot ========================
 	if(zc->battlemode & FIRE_STAYFIRE)
 	{
 		if(--zc->battlecount > 0)
 		{
 			mywep = Get_KindWeapon(client->pers.weapon);
 			if(1/*mywep == WEAP_BFG*/) CanUsewep(ent,WEAP_BFG);
-			aim *= 0.95;
+			aim *= 0.95f;
 			Get_AimAngle(ent,aim,distance,mywep);
 			if(target->client->weaponstate == WEAPON_FIRING && ent->groundentity)
 			{
@@ -1196,7 +1214,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				}
 				else client->ps.pmove.pm_flags |= PMF_DUCKED;
 			}
-			if(!(zc->battlemode & FIRE_SHIFT)) trace_priority = TRP_ALLKEEP;	//動かない
+			if(!(zc->battlemode & FIRE_SHIFT)) trace_priority = TRP_ALLKEEP; // doesn't work
 			if(Bot_traceS(ent,target) 
 				|| mywep == WEAP_BFG 
 				|| mywep == WEAP_GRENADELAUNCHER) client->buttons |= BUTTON_ATTACK;
@@ -1205,14 +1223,14 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		zc->battlemode = 0;
 	}
 
-	//FIRE_RUSH	つっこむ========================
+	//FIRE_RUSH tuck in ========================
 	if(zc->battlemode & FIRE_RUSH)
 	{
 		if(--zc->battlecount > 0)
 		{
 			mywep = Get_KindWeapon(client->pers.weapon);
 			if(1/*mywep == WEAP_BFG*/) CanUsewep(ent,WEAP_BFG);
-			aim *= 0.95;
+			aim *= 0.95f;
 			Get_AimAngle(ent,aim,distance,mywep);
 			if(target->client->weaponstate == WEAPON_FIRING && ent->groundentity)
 			{
@@ -1222,7 +1240,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				}
 				else client->ps.pmove.pm_flags |= PMF_DUCKED;
 			}
-			trace_priority = TRP_MOVEKEEP;	//後退処理
+			trace_priority = TRP_MOVEKEEP; // retreat processing
 			zc->moveyaw = ent->s.angles[YAW];
 
 			if(Bot_traceS(ent,target)) client->buttons |= BUTTON_ATTACK;
@@ -1231,14 +1249,14 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		zc->battlemode = 0;
 	}
 
-	//後退ファイア(爆発回避)========================
+	// retreat fire (explosion avoidance) ========================
 	if(zc->battlemode & FIRE_EXPAVOID)
 	{
 		if(--zc->battlecount > 0)
 		{
 			mywep = Get_KindWeapon(client->pers.weapon);
 			if(1/*mywep == WEAP_BFG*/) CanUsewep(ent,WEAP_BFG);
-			aim *= 0.95;
+			aim *= 0.95f;
 			Get_AimAngle(ent,aim,distance,mywep);
 			if(target->client->weaponstate == WEAPON_FIRING && ent->groundentity)
 			{
@@ -1248,7 +1266,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				}
 				else client->ps.pmove.pm_flags |= PMF_DUCKED;
 			}
-			trace_priority = TRP_MOVEKEEP;	//後退処理
+			trace_priority = TRP_MOVEKEEP; // retreat processing
 			zc->moveyaw = ent->s.angles[YAW] + 180;
 			if(zc->moveyaw > 180) zc->moveyaw -= 360;
 
@@ -1259,14 +1277,14 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		}
 		zc->battlemode = 0;
 	}
-	//ＢＦＧファイア(爆発回避)========================
+	// bfg fire (explosion avoidance) ========================
 	if(zc->battlemode & FIRE_BFG)
 	{
 		if(--zc->battlecount > 0)
 		{
 			mywep = Get_KindWeapon(client->pers.weapon);
 			if(1/*mywep == WEAP_BFG*/) CanUsewep(ent,WEAP_BFG);
-			aim *= 0.95;
+			aim *= 0.95f;
 			Get_AimAngle(ent,aim,distance,mywep);
 			if(target->client->weaponstate == WEAPON_FIRING && ent->groundentity)
 			{
@@ -1276,7 +1294,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				}
 				else client->ps.pmove.pm_flags |= PMF_DUCKED;
 			}
-			trace_priority = TRP_ANGLEKEEP;	//後退処理
+			trace_priority = TRP_ANGLEKEEP; // retreat processing
 
 			if(Bot_traceS(ent,target) 
 				|| mywep == WEAP_BFG 
@@ -1286,14 +1304,14 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		zc->battlemode = 0;
 	}
 
-	//撃って避難========================
+	// shoot and evacuate ========================
 	if(zc->battlemode & FIRE_REFUGE)
 	{
 		if(--zc->battlecount > 0)
 		{
 			mywep = Get_KindWeapon(client->pers.weapon);
 			//CanUsewep(ent,WEAP_BFG);
-			aim *= 0.95;
+			aim *= 0.95f;
 			Get_AimAngle(ent,aim,distance,mywep);
 			if(target->client->weaponstate == WEAPON_FIRING && ent->groundentity)
 			{
@@ -1303,8 +1321,8 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				}
 				else client->ps.pmove.pm_flags |= PMF_DUCKED;
 			}
-			trace_priority = TRP_ANGLEKEEP;	//動かない
-//			trace_priority = TRP_ALLKEEP;	//動かない
+			trace_priority = TRP_ANGLEKEEP; // doesn't work
+//			trace_priority = TRP_ALLKEEP; // doesn't work
 			if(Bot_traceS(ent,target) 
 				|| mywep == WEAP_BFG 
 				|| mywep == WEAP_GRENADELAUNCHER) client->buttons |= BUTTON_ATTACK;
@@ -1339,11 +1357,11 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 	}
 
 	//-----------------------------------------------------------------------
-	//特殊ファイアリング
+	// special firing
 	//-----------------------------------------------------------------------
 	mywep = Get_KindWeapon(client->pers.weapon);
 
-	//左右回避セット========================
+	// left and right avoidance set ========================
 	if(!(zc->battlemode & FIRE_SHIFT) && skill > (random() * skill) /*&& distance < 250*/
 		&& (30 * random()) < Bot[zc->botindex].param[BOP_OFFENCE])
 	{
@@ -1377,7 +1395,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 				f = -(f + 360);
 			}
 	
-			//俺をみている！！
+			// looking at me!
 			if(f <= -160)
 			{
 
@@ -1392,18 +1410,18 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		}
 	}
 
-	//敵がペンタをとっている========================
+	// the enemy is taking the penta ========================
 	if((FFlg[skill] & FIRE_AVOIDINV)
 		&& target->client->invincible_framenum > level.framenum)
 	{
 //		mywep = Get_KindWeapon(client->pers.weapon);
 		Get_AimAngle(ent,aim,distance,mywep);
-		trace_priority = TRP_MOVEKEEP;	//後退処理
+		trace_priority = TRP_MOVEKEEP; // retreat processing
 		zc->moveyaw = ent->s.angles[YAW] + 180;
 		if(zc->moveyaw > 180) zc->moveyaw -= 360;
 		return;
 	}
-	//Quad時の処理=================================
+	// quad processing =================================
 	if((FFlg[skill] & FIRE_QUADUSE) 
 		&& (ent->client->quad_framenum > level.framenum)
 		&& distance < 300)
@@ -1468,7 +1486,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 			return;
 		}
 	}
-	//撃って逃げる処理=================================
+	// processing to shoot and escape =================================
 	if((FFlg[skill] & FIRE_REFUGE)
 		&& zc->battlemode == 0 && zc->route_trace && zc->routeindex > 1 )
 	{
@@ -1485,17 +1503,17 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 			|| mywep == WEAP_ROCKETLAUNCHER
 			|| mywep == WEAP_PHALANX)
 			{
-				zc->battlemode |= FIRE_REFUGE;			//モード遷移
+				zc->battlemode |= FIRE_REFUGE; // mode transition
 				zc->battlecount = 8 + (int)(10 * random());
 				trace_priority = TRP_ALLKEEP;
 				return;
 			}
 		}
 	}
-	//トレース中以外のときにグルグルを防ぐ=================================
+	// prevents gurgling when not during tracing =================================
 	if(!zc->route_trace && distance < 100)
 	{
-		zc->battlemode |= FIRE_EXPAVOID;			//モード遷移
+		zc->battlemode |= FIRE_EXPAVOID; // mode transition
 		zc->battlecount = 4 + (int)(8 * random());
 		trace_priority = TRP_ALLKEEP;		
 	}
@@ -1503,8 +1521,8 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 
 	
 	//-----------------------------------------------------------------------
-	//プライオリティ
-	//-----------------------------------------------------------------------	
+	// priority
+	//-----------------------------------------------------------------------
 	//BFG
 	if(distance > 200)
 	{
@@ -1541,7 +1559,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 		}
 		else j = i;
 
-		if(distance > 100 && (mywep == WEAP_BFG || random() < 0.5))
+		if(distance > 100 && (mywep == WEAP_BFG || random() < 0.5f))
 		{
 			if(B_UseBfg(ent,target,enewep,aim,distance,skill)) goto FIRED;
 		}
@@ -1624,7 +1642,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 
 	
 	//-----------------------------------------------------------------------
-	//通常ファイアリング
+	// normal firing
 	//-----------------------------------------------------------------------
 	zc->secwep_selected = 0;
 	//BFG
@@ -1723,7 +1741,7 @@ void Combat_Level0(edict_t *ent,int foundedenemy,int enewep
 FIRED:
 	if(zc->secwep_selected == 2) zc->secwep_selected = 1;
 	
-	//チキンやろう========================
+	// let's do chicken ========================
 	if(zc->battlemode == FIRE_CHIKEN)
 	{
 		if(--zc->battlesubcnt > 0  && ent->groundentity && ent->waterlevel < 2)
@@ -1819,4 +1837,3 @@ void UpdateExplIndex(edict_t* ent)
 		if(!mod && ExplIndex[i] == NULL) {ExplIndex[i] = ent;mod = true;}
 	}
 }
-

@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "bot.h"
 #include "m_player.h"
 
@@ -94,7 +112,7 @@ void Load_BotInfo()
 	}
 	else
 	{
-		fseek( fp, 0, SEEK_SET);	//先頭へ移動
+		fseek( fp, 0, SEEK_SET); // move to the beginning
 		while(1)
 		{
 			if(fgets( Buff, sizeof(Buff), fp ) == NULL) goto MESS_NOTFOUND;
@@ -113,7 +131,7 @@ MESS_NOTFOUND:
 		//if(botlist->string == NULL) strcpy(MessageSection,BOTLIST_SECTION_DM);
 		//else 
 		sprintf(MessageSection,"[%s]",botlist->string);
-		fseek( fp, 0, SEEK_SET);	//先頭へ移動
+		fseek( fp, 0, SEEK_SET); // move to the beginning
 		while(1)
 		{
 			if(fgets( Buff, sizeof(Buff), fp ) == NULL)
@@ -127,7 +145,7 @@ MESS_NOTFOUND:
 		if(MessageSection[0] == 0)
 		{
 			strcpy(MessageSection,BOTLIST_SECTION_DM);
-			fseek( fp, 0, SEEK_SET);	//先頭へ移動
+			fseek( fp, 0, SEEK_SET); // move to the beginning
 			while(1)
 			{
 				if(fgets( Buff, sizeof(Buff), fp ) == NULL) goto BOTLIST_NOTFOUND;
@@ -211,8 +229,8 @@ MESS_NOTFOUND:
 BOTLIST_NOTFOUND:
 	fclose(fp);
 
-	gi.dprintf("%i of Bots is listed.\n",ListedBots);	
-	spawncycle = level.time + FRAMETIME * 100;
+	gi.dprintf("%i of bots is listed.\n",ListedBots);	
+	spawncycle = level.framenum + 100;
 }
 
 //----------------------------------------------------------------
@@ -222,7 +240,7 @@ BOTLIST_NOTFOUND:
 //
 //----------------------------------------------------------------
 
-int Get_NumOfPlayer (void) //Botも含めたplayerの数
+int Get_NumOfPlayer (void) // number of players including bots
 {
 	int i,j;
 	edict_t *ent;
@@ -255,7 +273,7 @@ edict_t *Get_NewClient (void)
 		client = &game.clients[i - 1];
 		// the first couple seconds of server time can involve a lot of
 		// freeing and allocating, so relax the replacement policy
-		if (!e->inuse && !client->pers.connected && ( e->freetime < 2 || level.time - e->freetime > 0.5 ) )
+		if (!e->inuse && !client->pers.connected && ( e->freetime < 2 || level.time - e->freetime > 0.5f ) )
 		{
 			G_InitEdict (e);
 			return e;
@@ -294,11 +312,11 @@ void Bot_Think (edict_t *self)
 //ZOID
 
 		self->client->zc.route_trace = false;
-		if(self->client->respawn_time <= level.time)
+		if(self->client->respawn_framenum <= level.framenum)
 		{
 			if(self->svflags & SVF_MONSTER)
 			{
-				self->client->respawn_time = level.time;
+				self->client->respawn_framenum = level.framenum;
 				CopyToBodyQue (self);
 				PutBotInServer(self);
 			}		
@@ -320,7 +338,7 @@ void Bot_Think (edict_t *self)
 	}
 	M_CatagorizePosition (self);
 	BotEndServerFrame (self);
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 	return;	
 }
 
@@ -336,7 +354,7 @@ void InitializeBot (edict_t *ent,int botindex )
 	gclient_t	*client;
 	char		pinfo[200];
 	int			index;
-	int			i;
+	//int		i;
 
 	index = ent-g_edicts-1;
 	ent->client = &game.clients[index];
@@ -417,7 +435,7 @@ void PutBotInServer (edict_t *ent)
 	client->breather_framenum = 0;
 	client->enviro_framenum = 0;
 	client->grenade_blew_up = false;
-	client->grenade_time = 0;
+	client->grenade_framenum = 0;
 
 	j = zc->botindex;
 	i = zc->routeindex;
@@ -461,16 +479,16 @@ void PutBotInServer (edict_t *ent)
 	ent->die = player_die;
 	ent->touch = NULL; 
 	
-	ent->moveinfo.decel = level.time;
-	ent->pain_debounce_time = level.time;
+	ent->moveinfo.decel = level.time; // todo: framenum
+	ent->pain_debounce_framenum = level.framenum;
 	ent->targetname = NULL;
 
-	ent->moveinfo.speed = 1.0;	//ジャンプ中の移動率について追加
-	ent->moveinfo.state = GETTER;	//CTFステータス初期化
+	ent->moveinfo.speed = 1.0f; // added about movement rate during jump
+	ent->moveinfo.state = GETTER; // ctf status initialization
 
 	ent->prethink = NULL;
 	ent->think = Bot_Think;
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = level.framenum + 1;
 	ent->svflags /*|*/= SVF_MONSTER ;
 	ent->s.renderfx = 0;
 	ent->s.effects = 0;
@@ -496,7 +514,7 @@ void PutBotInServer (edict_t *ent)
 	ent->client->breather_framenum = level.framenum;
 	ent->client->weaponstate = WEAPON_READY;
 	ent->takedamage = DAMAGE_AIM;
-	ent->air_finished = level.time + 12;
+	ent->air_finished_framenum = level.framenum + 12 * BASE_FRAMERATE;
 	ent->clipmask = MASK_PLAYERSOLID;//MASK_MONSTERSOLID;
 	ent->flags &= ~FL_NO_KNOCKBACK;
 
@@ -591,7 +609,7 @@ qboolean SpawnBot(int i)
 			}  
 		}
 
-		bot->client->zc.rt_locktime = level.time + FRAMETIME * 20;
+		bot->client->zc.rt_lock_framenum = level.framenum + 20;
 		bot->client->zc.route_trace = true;
 		bot->client->zc.routeindex = k;
 		VectorCopy(Route[k].Pt,bot->s.origin);
@@ -829,7 +847,7 @@ void ZigockClientJoin(edict_t  *ent,int zclass)
 {
 	PMenu_Close(ent);
 
-	ent->moveinfo.sound_end = CLS_ALPHA;	//PutClientの前にクラス決定
+	ent->moveinfo.sound_end = CLS_ALPHA; // class decision before PutClient
 
 	ent->svflags &= ~SVF_NOCLIENT;
 	PutClientInServer (ent);
@@ -911,7 +929,7 @@ static void AirSight_Explode (edict_t *ent)
 
 	T_RadiusDamage(ent, ent->owner, ent->dmg, ent->enemy, ent->dmg_radius, mod);
 
-	VectorMA (ent->s.origin, -0.02, ent->velocity, origin);
+	VectorMA (ent->s.origin, -0.02f, ent->velocity, origin);
 	gi.WriteByte (svc_temp_entity);
 	if (ent->waterlevel)
 	{
@@ -945,7 +963,7 @@ void AirSight_Think(edict_t *ent)
 	else ent->s.frame = 0;
 
 	ent->think = AirSight_Explode;
-	ent->nextthink = level.time + FRAMETIME * 6;
+	ent->nextthink = level.framenum + 6;
 	gi.linkentity (ent);
 }
 void AirStrike_Think(edict_t *ent)
@@ -956,7 +974,7 @@ void AirStrike_Think(edict_t *ent)
 
 	vec3_t	point;
 
-	ent->nextthink = level.time + ent->moveinfo.speed * 0.5 /300;
+	ent->nextthink = level.framenum + (ent->moveinfo.speed * 0.5f / 300) * BASE_FRAMERATE;
 	ent->think = G_FreeEdict;
 //	ent->s.modelindex = gi.modelindex ("models/ships/bigviper/tris.md2");
 
@@ -971,18 +989,18 @@ void AirStrike_Think(edict_t *ent)
 
 		if( target->classname[0] == 'p')
 		{
-			//ctf ならチームメイト無視
+			// ignore teammates with ctf
 			if(!ctf->value || (ctf->value && ent->owner->client->resp.ctf_team != target->client->resp.ctf_team))
 			{
 				rs_trace = gi.trace (point,NULL,NULL,target->s.origin,ent, CONTENTS_SOLID | CONTENTS_WINDOW | CONTENTS_LAVA | CONTENTS_SLIME);
 
-				if(rs_trace.fraction == 1.0)
+				if(rs_trace.fraction == 1.0f)
 				{
 					sight = G_Spawn();
 
 					sight->classname = "airstrike";
 					sight->think = AirSight_Think;
-					sight->nextthink = level.time + FRAMETIME * 2 * (float)j;
+					sight->nextthink = level.framenum + 2 * (float)j;
 					sight->movetype = MOVETYPE_NOCLIP;
 					sight->solid = SOLID_NOT;
 					sight->owner = ent->owner;
@@ -1020,7 +1038,7 @@ void Cmd_AirStrike(edict_t *ent)
 	}*/
 
 	VectorCopy(rs_trace.endpos,strpoint);
-	strpoint[2] -= 16;	//ちょっとだけ下へずらす
+	strpoint[2] -= 16; // move down a little
 
 	f = ent->s.angles[YAW]*M_PI*2 / 360;
 	tts[0] = cos(f) * (-8190) ;
@@ -1060,7 +1078,7 @@ void Cmd_AirStrike(edict_t *ent)
 
 	gi.sound (ent, CHAN_AUTO, gi.soundindex("world/incoming.wav"), 1, ATTN_NONE, 0);
 
-	viper->nextthink = level.time + f *0.75 /300;
+	viper->nextthink = level.framenum + (f * 0.75f / 300) * BASE_FRAMERATE;
 	viper->think = AirStrike_Think;
 	viper->moveinfo.speed = f;
 
@@ -1071,9 +1089,8 @@ void Cmd_AirStrike(edict_t *ent)
 	VectorCopy(strpoint,viper->moveinfo.start_angles);	//strikepoint
 	
 //	viper->think = Pod_think;
-//	viper->nextthink = level.time + FRAMETIME;
+//	viper->nextthink = level.framenum + 1;
 	viper->classname = "viper";	
 	viper->s.origin[2] += 16;
 	gi.linkentity (viper);
 }
-

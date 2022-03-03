@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #ifndef BOTSTRUCT
 #define BOTSTRUCT
 
@@ -10,14 +28,14 @@ typedef struct zgcl_s
 
 	int			botindex;		//botlist's index NO.
 
-// true client用 zoom フラグ	
+// zoom flag for true client
 	int			aiming;			//0-not 1-aiming  2-firing zoomingflag
-	float		distance;		//zoom中のFOV値
-	float		olddistance;	//旧zooming FOV値
+	float		distance;		// fov value in zoom
+	float		olddistance;	// old zooming fov value
 	qboolean	autozoom;		//autozoom
 	qboolean	lockon;			//lockon flag false-not true-locking
 
-// bot用	
+// for bot
 	int			zcstate;		//status
 	int			zccmbstt;		//combat status
 
@@ -68,8 +86,8 @@ typedef struct zgcl_s
 	//route
 	qboolean	route_trace;
 	int			routeindex;		//routing index
-	float		rt_locktime;
-	float		rt_releasetime;
+	int			rt_lock_framenum;
+	int			rt_release_framenum;
 	qboolean	havetarget;		//target on/off
 	int			targetindex;
 

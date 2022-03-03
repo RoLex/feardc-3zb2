@@ -1,3 +1,21 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "g_local.h"
 
 /*QUAKED target_temp_entity (1 0 0) (-8 -8 -8) (8 8 8)
@@ -75,10 +93,10 @@ void SP_target_speaker (edict_t *ent)
 	ent->noise_index = gi.soundindex (buffer);
 
 	if (!ent->volume)
-		ent->volume = 1.0;
+		ent->volume = 1.0f;
 
 	if (!ent->attenuation)
-		ent->attenuation = 1.0;
+		ent->attenuation = 1.0f;
 	else if (ent->attenuation == -1)	// use -1 so 0 defaults to 1
 		ent->attenuation = 0;
 
@@ -233,7 +251,7 @@ void use_target_explosion (edict_t *self, edict_t *other, edict_t *activator)
 	}
 
 	self->think = target_explosion_explode;
-	self->nextthink = level.time + self->delay;
+	self->nextthink = level.framenum + self->delay * BASE_FRAMERATE;
 }
 
 void SP_target_explosion (edict_t *ent)
@@ -250,7 +268,7 @@ Changes level to "map" when fired
 */
 void use_target_changelevel (edict_t *self, edict_t *other, edict_t *activator)
 {
-	if (level.intermissiontime)
+	if (level.intermission_framenum)
 		return;		// already activated
 
 	if (!deathmatch->value && !coop->value)
@@ -396,7 +414,8 @@ speed	default is 1000
 
 void use_target_blaster (edict_t *self, edict_t *other, edict_t *activator)
 {
-	int effect;
+//#if 0
+	int effect; // todo
 
 	if (self->spawnflags & 2)
 		effect = 0;
@@ -404,6 +423,7 @@ void use_target_blaster (edict_t *self, edict_t *other, edict_t *activator)
 		effect = EF_HYPERBLASTER;
 	else
 		effect = EF_BLASTER;
+//#endif
 
 	fire_blaster (self, self->s.origin, self->movedir, self->dmg, self->speed, EF_BLASTER, MOD_TARGET_BLASTER);
 	gi.sound (self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM, 0);
@@ -463,7 +483,7 @@ void SP_target_crosslevel_target (edict_t *self)
 	self->svflags = SVF_NOCLIENT;
 
 	self->think = target_crosslevel_target_think;
-	self->nextthink = level.time + self->delay;
+	self->nextthink = level.framenum + self->delay * BASE_FRAMERATE;
 }
 
 //==========================================================
@@ -491,7 +511,7 @@ void target_laser_think (edict_t *self)
 	if (self->enemy)
 	{
 		VectorCopy (self->movedir, last_movedir);
-		VectorMA (self->enemy->absmin, 0.5, self->enemy->size, point);
+		VectorMA (self->enemy->absmin, 0.5f, self->enemy->size, point);
 		VectorSubtract (point, self->s.origin, self->movedir);
 		VectorNormalize (self->movedir);
 		if (!VectorCompare(self->movedir, last_movedir))
@@ -537,7 +557,7 @@ void target_laser_think (edict_t *self)
 
 	VectorCopy (tr.endpos, self->s.old_origin);
 
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = level.framenum + 1;
 }
 
 void target_laser_on (edict_t *self)
@@ -626,7 +646,7 @@ void SP_target_laser (edict_t *self)
 {
 	// let everything else get spawned before we start firing
 	self->think = target_laser_start;
-	self->nextthink = level.time + 1;
+	self->nextthink = level.framenum + 1 * BASE_FRAMERATE;
 }
 
 //==========================================================
@@ -641,7 +661,7 @@ void target_mal_laser_on (edict_t *self)
 	self->spawnflags |= 0x80000001;
 	self->svflags &= ~SVF_NOCLIENT;
 	// target_laser_think (self);
-	self->nextthink = level.time + self->wait + self->delay;
+	self->nextthink = level.framenum + (self->wait + self->delay) * BASE_FRAMERATE;
 }
 
 void target_mal_laser_off (edict_t *self)
@@ -663,7 +683,8 @@ void target_mal_laser_use (edict_t *self, edict_t *other, edict_t *activator)
 void mal_laser_think (edict_t *self)
 {
 	target_laser_think (self);
-	self->nextthink = level.time + self->wait + 0.1;
+	//self->nextthink = level.time + self->wait + 0.1f; // todo
+	self->nextthink = level.framenum + (self->wait + 0.1f) * BASE_FRAMERATE;
 	self->spawnflags |= 0x80000000;
 }
 
@@ -695,10 +716,10 @@ void SP_target_mal_laser (edict_t *self)
 	G_SetMovedir (self->s.angles, self->movedir);
 	
 	if (!self->delay)
-		self->delay = 0.1;
+		self->delay = 0.1f;
 
 	if (!self->wait)
-		self->wait = 0.1;
+		self->wait = 0.1f;
 
 	if (!self->dmg)
 		self->dmg = 5;
@@ -706,7 +727,7 @@ void SP_target_mal_laser (edict_t *self)
 	VectorSet (self->mins, -8, -8, -8);
 	VectorSet (self->maxs, 8, 8, 8);
 	
-	self->nextthink = level.time + self->delay;
+	self->nextthink = level.framenum + self->delay * BASE_FRAMERATE;
 	self->think = mal_laser_think;
 
 	self->use = target_mal_laser_use;
@@ -728,14 +749,15 @@ message		two letters; starting lightlevel and ending lightlevel
 void target_lightramp_think (edict_t *self)
 {
 	char	style[2];
+	float   diff = (level.framenum - self->timestamp) * FRAMETIME; // todo: not sure
 
-	style[0] = 'a' + self->movedir[0] + (level.time - self->timestamp) / FRAMETIME * self->movedir[2];
+	style[0] = 'a' + self->movedir[0] + diff * self->movedir[2];
 	style[1] = 0;
 	gi.configstring (CS_LIGHTS+self->enemy->style, style);
 
-	if ((level.time - self->timestamp) < self->speed)
+	if (diff < self->speed)
 	{
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = level.framenum + 1;
 	}
 	else if (self->spawnflags & 1)
 	{
@@ -780,7 +802,7 @@ void target_lightramp_use (edict_t *self, edict_t *other, edict_t *activator)
 		}
 	}
 
-	self->timestamp = level.time;
+	self->timestamp = level.framenum;
 	target_lightramp_think (self);
 }
 
@@ -812,7 +834,7 @@ void SP_target_lightramp (edict_t *self)
 
 	self->movedir[0] = self->message[0] - 'a';
 	self->movedir[1] = self->message[1] - 'a';
-	self->movedir[2] = (self->movedir[1] - self->movedir[0]) / (self->speed / FRAMETIME);
+	self->movedir[2] = (self->movedir[1] - self->movedir[0]) / self->speed;
 }
 
 //==========================================================
@@ -829,10 +851,10 @@ void target_earthquake_think (edict_t *self)
 	int		i;
 	edict_t	*e;
 
-	if (self->last_move_time < level.time)
+	if (self->last_move_framenum < level.framenum)
 	{
-		gi.positioned_sound (self->s.origin, self, CHAN_AUTO, self->noise_index, 1.0, ATTN_NONE, 0);
-		self->last_move_time = level.time + 0.5;
+		gi.positioned_sound (self->s.origin, self, CHAN_AUTO, self->noise_index, 1.0f, ATTN_NONE, 0);
+		self->last_move_framenum = level.framenum + 0.5f * BASE_FRAMERATE;
 	}
 
 	for (i=1, e=g_edicts+i; i < globals.num_edicts; i++,e++)
@@ -847,19 +869,19 @@ void target_earthquake_think (edict_t *self)
 		e->groundentity = NULL;
 		e->velocity[0] += crandom()* 150;
 		e->velocity[1] += crandom()* 150;
-		e->velocity[2] = self->speed * (100.0 / e->mass);
+		e->velocity[2] = self->speed * (100.0f / e->mass);
 	}
 
-	if (level.time < self->timestamp)
-		self->nextthink = level.time + FRAMETIME;
+	if (level.framenum < self->timestamp)
+		self->nextthink = level.framenum + 1;
 }
 
 void target_earthquake_use (edict_t *self, edict_t *other, edict_t *activator)
 {
-	self->timestamp = level.time + self->count;
-	self->nextthink = level.time + FRAMETIME;
+	self->timestamp = level.framenum + self->count * BASE_FRAMERATE;
+	self->nextthink = level.framenum + 1;
 	self->activator = activator;
-	self->last_move_time = 0;
+	self->last_move_framenum = 0;
 }
 
 void SP_target_earthquake (edict_t *self)

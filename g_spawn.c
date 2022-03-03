@@ -1,3 +1,20 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
 #include "g_local.h"
 #include "bot.h"
@@ -450,6 +467,8 @@ void ED_ParseField (char *key, char *value, edict_t *ent)
 				break;
 			case F_IGNORE:
 				break;
+            default:
+                break;
 			}
 			return;
 		}
@@ -721,7 +740,7 @@ qboolean RTJump_Chk(vec3_t apos,vec3_t tpos)
 	vec3_t	v,vv;
 	int		mf = false;
 
-	grav = 1.0 * sv_gravity->value * FRAMETIME; 
+	grav = 1.0f * sv_gravity->value * FRAMETIME; 
 
 	vel = VEL_BOT_JUMP;
 	yori = apos[2];
@@ -788,7 +807,7 @@ void G_FindRouteLink(edict_t *ent)
 	float	x;
 
 
-	//旗を発生させる
+	// raise a flag
 	if(!ctf->value && zigmode->value == 1)
 	{
 		item = FindItem("Zig Flag");
@@ -858,7 +877,7 @@ gi.dprintf("Linking routes...\n");
 
 				rs_trace = gi.trace(Route[j].Pt,NULL,NULL,Route[i].Pt,ent,MASK_SOLID); 
 				//found!!
-				if(!rs_trace.startsolid && !rs_trace.allsolid && rs_trace.fraction == 1.0)
+				if(!rs_trace.startsolid && !rs_trace.allsolid && rs_trace.fraction == 1.0f)
 				{
 					for(k = 0;k < (MAXLINKPOD - (ctf->value != 0));k++)
 					{
@@ -914,7 +933,7 @@ void G_SpawnRouteLink()
 
 	e = G_Spawn();
 
-	e->nextthink = level.time + FRAMETIME * 2;
+	e->nextthink = level.framenum + 2;
 	e->think = G_FindRouteLink;
 }
 
@@ -926,10 +945,10 @@ Creates a server's entity / program execution context by
 parsing textual entity definitions out of an ent file.
 ==============
 */
-//void SetBotFlag1(edict_t *ent);	//チーム1の旗
-//void SetBotFlag2(edict_t *ent);  //チーム2の旗
+//void SetBotFlag1(edict_t *ent); // team 1 flag
+//void SetBotFlag2(edict_t *ent); // team 2 flag
 
-//void CTFSetupNavSpawn();	//ナビの設置
+//void CTFSetupNavSpawn(); // installation of navigation
 void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 {
 	edict_t		*ent;
@@ -1033,7 +1052,7 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 
 	PlayerTrail_Init ();
 
-	//func_trainのリンク
+	// func_train link
 	G_FindTrainTeam();
 
 
@@ -1043,20 +1062,20 @@ void SpawnEntities (char *mapname, char *entities, char *spawnpoint)
 //ZOID
 
 //ponko	
-	CTFSetupNavSpawn();	//ナビの設置
-	if(!chedit->value) G_FindItemLink();	//アイテムのリンク(通常時のみ)
+	CTFSetupNavSpawn(); // installation of navigation
+	if(!chedit->value) G_FindItemLink(); // item link (normal time only)
 
 	G_SpawnRouteLink();
 
 	if(zigmode->value == 1) zigflag_spawn = 1;
 	else zigflag_spawn = 0;
-	//旗のアイテムアドレス取得
+	// get the item address of the flag
 	zflag_item =  FindItem("Zig Flag");
-	zflag_ent = NULL;		//初期化
+	zflag_ent = NULL; // initialize
 //	if(CurrentIndex > 0)
 //ponko
 
-	ctfjob_update = level.time;
+	ctfjob_update = level.time; // todo: framenum
 }
 
 
@@ -1470,5 +1489,3 @@ void SP_worldspawn (edict_t *ent)
 
 	memset(ExplIndex,0,sizeof(ExplIndex));
 }
-
-
