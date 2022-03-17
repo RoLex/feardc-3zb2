@@ -53,7 +53,8 @@ void Load_BotInfo()
 {
 	char	MessageSection[50];
 	char	Buff[1024];
-	int		i,j,k,l;
+	int		i,j,l;
+	size_t	k;
 
 	FILE	*fp;
 
@@ -163,57 +164,57 @@ MESS_NOTFOUND:
 			if(!strncmp(Buff,"\\\\",2))
 			{
 				//netname
-				if(Get_YenPos(Buff,&k))
+				if(Get_YenPos(Buff,(int*)&k))
 				{
 					Buff[k] = 0;
 					if(strlen(&Buff[j]) < 21) strcpy(Bot[i].netname,&Buff[j]);
-					j = k + 1;
+					j = (int)k + 1;
 				}
 				else break;
 				//model name
-				if(Get_YenPos(Buff,&k))
+				if(Get_YenPos(Buff,(int*)&k))
 				{
 					Buff[k] = 0;
 					if(strlen(&Buff[j]) < 21) strcpy(Bot[i].model,&Buff[j]);
-					j = k + 1;
+					j = (int)k + 1;
 					k++;
 				}
 				else break;
 				//skin name
-				if(Get_YenPos(Buff,&k))
+				if(Get_YenPos(Buff, (int*)&k))
 				{
 					Buff[k] = 0;
 					if(strlen(&Buff[j]) < 21) strcpy(Bot[i].skin,&Buff[j]);
-					j = k + 1;
+					j = (int)k + 1;
 					k++;
 				}
 				else break;
 				for(l = 0;l < MAXBOP;l++)
 				{
 					//param0-7
-					if(Get_YenPos(Buff,&k))
+					if(Get_YenPos(Buff,(int*)&k))
 					{
 						Buff[k] = 0;
 						Bot[i].param[l] = (unsigned char)atoi(&Buff[j]);
-						j = k + 1;
+						j = (int)k + 1;
 						k++;
 					}
 					else break;
 				}
 				if(l < MAXBOP) break;
 				//team
-				if(Get_YenPos(Buff,&k))
+				if(Get_YenPos(Buff,(int*)&k))
 				{
 					Buff[k] = 0;
 					if(Buff[j] == 'R') Bot[i].team = 1;
 					else if(Buff[j] == 'B') Bot[i].team = 2;
 					else Bot[i].team = 1;
-					j = k + 1;
+					j = (int)k + 1;
 					k++;
 				}
 				else break;
 				//auto spawn
-				if(Get_YenPos(Buff,&k))
+				if(Get_YenPos(Buff,(int*)&k))
 				{
 					Buff[k] = 0;
 					Bot[i].spflg = atoi(&Buff[j]);

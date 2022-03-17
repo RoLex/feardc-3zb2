@@ -390,11 +390,12 @@ ED_NewString
 char *ED_NewString (char *string)
 {
 	char	*newb, *new_p;
-	int		i,l;
+	int		i;
+	size_t	l;
 	
 	l = strlen(string) + 1;
 
-	newb = gi.TagMalloc (l, TAG_LEVEL);
+	newb = gi.TagMalloc ((int)l, TAG_LEVEL);
 
 	new_p = newb;
 

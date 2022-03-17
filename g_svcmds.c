@@ -313,6 +313,11 @@ void	Svcmd_Test_f (void)
 	gi.cprintf (NULL, PRINT_HIGH, "Svcmd_Test_f()\n");
 }
 
+void Svcmd_Version_f(void)
+{
+	gi.cprintf(NULL, PRINT_HIGH, "FearDC 3ZB2 0.97\n");
+}
+
 // save chain file
 void SaveChain()
 {
@@ -437,6 +442,8 @@ void	ServerCommand (void)
 	cmd = gi.argv(1);
 	if (Q_stricmp (cmd, "test") == 0)
 		Svcmd_Test_f ();
+	else if (Q_stricmp(cmd, "3zb2ver") == 0)
+		Svcmd_Version_f();
 	else if (Q_stricmp (cmd, "savechain") == 0)
 		SaveChain ();
 	else if (Q_stricmp (cmd, "spb") == 0)

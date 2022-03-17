@@ -30,6 +30,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma warning(disable : 4018)     // signed/unsigned mismatch
 #pragma warning(disable : 4305)		// truncation from const double to float
 
+#pragma warning(disable:4996)		// strcpy, strncpy, strcat, sprintf, vsprintf, fopen, stricmp, sscanf, localtime
+#pragma warning(disable:4311)		// pointer truncation from char**, vec3_t*, int*, float*, gclient_s**, gitem_t**, edict_t** to int
+
 #endif
 
 #include <assert.h>
